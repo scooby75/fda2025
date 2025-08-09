@@ -9,8 +9,10 @@ import { Upload, Database, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+type TableName = 'gamedata' | 'dailygame' | 'rankinghome' | 'rankingaway';
+
 export default function UploadData() {
-  const [uploadType, setUploadType] = useState<'gamedata' | 'dailygame' | 'rankinghome' | 'rankingaway'>('gamedata');
+  const [uploadType, setUploadType] = useState<TableName>('gamedata');
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState<{type: string, text: string} | null>(null);
@@ -18,10 +20,10 @@ export default function UploadData() {
   const { toast } = useToast();
 
   const entityOptions = [
-    { value: 'gamedata' as const, label: 'Dados Históricos (GameData)', table: 'gamedata' as const },
-    { value: 'dailygame' as const, label: 'Jogos do Dia (DailyGame)', table: 'dailygame' as const },
-    { value: 'rankinghome' as const, label: 'Ranking Mandantes (RankingHome)', table: 'rankinghome' as const },
-    { value: 'rankingaway' as const, label: 'Ranking Visitantes (RankingAway)', table: 'rankingaway' as const },
+    { value: 'gamedata' as TableName, label: 'Dados Históricos (GameData)', table: 'gamedata' as TableName },
+    { value: 'dailygame' as TableName, label: 'Jogos do Dia (DailyGame)', table: 'dailygame' as TableName },
+    { value: 'rankinghome' as TableName, label: 'Ranking Mandantes (RankingHome)', table: 'rankinghome' as TableName },
+    { value: 'rankingaway' as TableName, label: 'Ranking Visitantes (RankingAway)', table: 'rankingaway' as TableName },
   ];
 
   const processUpload = async (file: File | null) => {
@@ -217,7 +219,7 @@ export default function UploadData() {
             {/* Type Selection */}
             <div>
               <Label htmlFor="uploadType" className="text-muted-foreground">Tipo de Dados</Label>
-              <Select value={uploadType} onValueChange={(value: any) => setUploadType(value)}>
+              <Select value={uploadType} onValueChange={(value: TableName) => setUploadType(value)}>
                 <SelectTrigger className="bg-input border-border text-foreground">
                   <SelectValue placeholder="Selecione o tipo de dado" />
                 </SelectTrigger>

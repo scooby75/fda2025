@@ -246,8 +246,6 @@ const BacktestingPage = () => {
           <CardContent className="p-6">
             <StrategyForm
               gameData={gameData || []}
-              rankingHomeData={rankingHomeData || []}
-              rankingAwayData={rankingAwayData || []}
               onRunBacktest={runBacktest}
               isLoading={isRunning}
               initialStrategy={currentStrategy}
@@ -263,8 +261,6 @@ const BacktestingPage = () => {
               strategy={currentStrategy}
               results={results}
               onSaveStrategy={saveStrategy}
-              gameData={gameData || []}
-              onRunNewBacktest={runBacktest}
             />
           ) : (
             <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
