@@ -1,37 +1,54 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Users, Database, BarChart3, DollarSign, Target } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import TodaysGames from "@/components/TodaysGames";
-import RecentBets from "@/components/RecentBets";
-import StatsCard from "../statscard";
+import { BarChart3, TrendingUp, Target, Users } from "lucide-react";
+import StatsCard from "./StatsCard";
 
 const Dashboard = () => {
-  // Fetch dashboard stats
-  const { data: stats } = useQuery({
-    queryKey: ['dashboard-stats'],
+  // Fetch game data
+  const { data: gameData } = useQuery({
+    queryKey: ['gamedata'],
     queryFn: async () => {
-      const [betsResult, bankrollResult, gamesResult, strategiesResult] = await Promise.all([
-        supabase.from('bet_transaction').select('*', { count: 'exact' }),
-        supabase.from('bankroll').select('*'),
-        supabase.from('dailygame').select('*', { count: 'exact' }),
-        supabase.from('strategy').select('*', { count: 'exact' })
-      ]);
-
-      const totalProfit = betsResult.data?.reduce((sum, bet) => sum + (Number(bet.profit) || 0), 0) || 0;
-      const totalBalance = bankrollResult.data?.reduce((sum, bank) => sum + (Number(bank.current_balance) || 0), 0) || 0;
-
-      return {
-        totalBets: betsResult.count || 0,
-        totalProfit,
-        totalBalance,
-        gamesCount: gamesResult.count || 0,
-        strategiesCount: strategiesResult.count || 0
-      };
+      const { data, error } = await supabase
+        .from('gamedata')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
     },
   });
+
+  // Fetch strategies
+  const { data: strategies } = useQuery({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('strategy')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch users
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const totalGames = gameData?.length || 0;
+  const totalStrategies = strategies?.length || 0;
+  const totalUsers = users?.length || 0;
+  const profitableStrategies = strategies?.filter(s => s.roi > 0).length || 0;
 
   return (
     <div className="p-6 lg:p-8 space-y-8">
@@ -41,110 +58,99 @@ const Dashboard = () => {
           Dashboard
         </h1>
         <p className="text-slate-400 text-lg">
-          Visão geral da sua plataforma de análise esportiva
+          Visão geral da plataforma de backtesting
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Total de Apostas"
-          value={stats?.totalBets?.toString() || "0"}
-          icon={Target}
+          title="Total de Jogos"
+          value={totalGames.toLocaleString()}
+          icon={BarChart3}
           bgColor="bg-blue-500"
           trend="+12% este mês"
         />
         
         <StatsCard
-          title="Lucro Total"
-          value={`R$ ${stats?.totalProfit?.toFixed(2) || "0.00"}`}
-          icon={TrendingUp}
+          title="Estratégias Criadas"
+          value={totalStrategies}
+          icon={Target}
           bgColor="bg-emerald-500"
-          trend={stats?.totalProfit && stats.totalProfit > 0 ? "+ROI positivo" : "ROI negativo"}
-        />
-        
-        <StatsCard
-          title="Saldo Total"
-          value={`R$ ${stats?.totalBalance?.toFixed(2) || "0.00"}`}
-          icon={DollarSign}
-          bgColor="bg-purple-500"
-        />
-        
-        <StatsCard
-          title="Jogos Disponíveis"
-          value={stats?.gamesCount?.toString() || "0"}
-          icon={Database}
-          bgColor="bg-orange-500"
-        />
-        
-        <StatsCard
-          title="Estratégias"
-          value={stats?.strategiesCount?.toString() || "0"}
-          icon={BarChart3}
-          bgColor="bg-indigo-500"
+          trend="+8% esta semana"
         />
         
         <StatsCard
           title="Usuários Ativos"
-          value="5"
+          value={totalUsers}
           icon={Users}
-          bgColor="bg-pink-500"
+          bgColor="bg-purple-500"
+          trend="+15% este mês"
+        />
+        
+        <StatsCard
+          title="Estratégias Lucrativas"
+          value={profitableStrategies}
+          icon={TrendingUp}
+          bgColor="bg-orange-500"
+          trend={`${totalStrategies > 0 ? Math.round((profitableStrategies / totalStrategies) * 100) : 0}% do total`}
         />
       </div>
 
-      {/* Main Content Grid */}
+      {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <TodaysGames />
-        <RecentBets />
-      </div>
-
-      {/* Additional Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-emerald-400" />
-              Performance Recente
-            </CardTitle>
+          <CardHeader className="border-b border-slate-700">
+            <CardTitle className="text-white">Estratégias Recentes</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Taxa de Acerto (7 dias)</span>
-                <span className="text-emerald-400 font-semibold">67.3%</span>
+          <CardContent className="p-6">
+            {strategies && strategies.length > 0 ? (
+              <div className="space-y-4">
+                {strategies.slice(0, 5).map((strategy, index) => (
+                  <div key={index} className="flex justify-between items-center p-3 bg-slate-700/30 rounded-lg">
+                    <div>
+                      <h4 className="text-white font-medium">{strategy.name}</h4>
+                      <p className="text-slate-400 text-sm">{strategy.market}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-medium ${strategy.roi >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {strategy.roi?.toFixed(1)}% ROI
+                      </p>
+                      <p className="text-slate-400 text-sm">{strategy.total_bets} apostas</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">ROI Médio</span>
-                <span className="text-blue-400 font-semibold">+8.2%</span>
+            ) : (
+              <div className="text-center py-8">
+                <Target className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">Nenhuma estratégia criada ainda</p>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-400">Maior Sequência</span>
-                <span className="text-purple-400 font-semibold">5 green</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Database className="h-5 w-5 text-blue-400" />
-              Dados da Plataforma
-            </CardTitle>
+          <CardHeader className="border-b border-slate-700">
+            <CardTitle className="text-white">Status do Sistema</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Jogos Históricos</span>
-                <span className="text-blue-400 font-semibold">50,247</span>
+                <span className="text-slate-300">Base de Dados</span>
+                <span className="text-emerald-400 font-medium">Online</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Ligas Cobertas</span>
-                <span className="text-emerald-400 font-semibold">25</span>
+                <span className="text-slate-300">Jogos Históricos</span>
+                <span className="text-emerald-400 font-medium">{totalGames.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400">Última Atualização</span>
-                <span className="text-slate-300">Há 2 horas</span>
+                <span className="text-slate-300">Última Atualização</span>
+                <span className="text-slate-400">Hoje</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Performance</span>
+                <span className="text-emerald-400 font-medium">Excelente</span>
               </div>
             </div>
           </CardContent>

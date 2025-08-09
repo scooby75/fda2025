@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, ArrowLeft, Database, Trash2, CalendarDays, Info } from "lucide-react";
+import { Upload, Database, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function UploadData() {
-  const [uploadType, setUploadType] = useState('gamedata');
+  const [uploadType, setUploadType] = useState<'gamedata' | 'dailygame' | 'rankinghome' | 'rankingaway'>('gamedata');
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState<{type: string, text: string} | null>(null);
@@ -18,10 +18,10 @@ export default function UploadData() {
   const { toast } = useToast();
 
   const entityOptions = [
-    { value: 'gamedata', label: 'Dados Históricos (GameData)', table: 'gamedata' },
-    { value: 'dailygame', label: 'Jogos do Dia (DailyGame)', table: 'dailygame' },
-    { value: 'rankinghome', label: 'Ranking Mandantes (RankingHome)', table: 'rankinghome' },
-    { value: 'rankingaway', label: 'Ranking Visitantes (RankingAway)', table: 'rankingaway' },
+    { value: 'gamedata' as const, label: 'Dados Históricos (GameData)', table: 'gamedata' as const },
+    { value: 'dailygame' as const, label: 'Jogos do Dia (DailyGame)', table: 'dailygame' as const },
+    { value: 'rankinghome' as const, label: 'Ranking Mandantes (RankingHome)', table: 'rankinghome' as const },
+    { value: 'rankingaway' as const, label: 'Ranking Visitantes (RankingAway)', table: 'rankingaway' as const },
   ];
 
   const processUpload = async (file: File | null) => {
@@ -95,7 +95,7 @@ export default function UploadData() {
       for (let i = 0; i < dataArray.length; i += batchSize) {
         const batch = dataArray.slice(i, i + batchSize);
         
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from(selectedEntity.table)
           .insert(batch);
 
@@ -159,7 +159,7 @@ export default function UploadData() {
       const { error } = await supabase
         .from(selectedEntity.table)
         .delete()
-        .neq('id', 0); // Delete all records
+        .neq('id', 0);
 
       if (error) throw error;
 
@@ -195,20 +195,20 @@ export default function UploadData() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl lg:text-4xl font-semibold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent mb-1">
+          <h1 className="text-3xl lg:text-4xl font-semibold bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent mb-1">
             Upload de Dados
           </h1>
-          <p className="text-slate-400 text-lg">
+          <p className="text-muted-foreground text-lg">
             Importe dados de jogos, rankings e outras informações
           </p>
         </div>
       </div>
 
       {/* Upload Section */}
-      <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm mb-8">
-        <CardHeader className="border-b border-slate-700">
-          <CardTitle className="text-white flex items-center gap-2">
-            <Upload className="w-6 h-6 text-emerald-400" />
+      <Card className="bg-card border-border backdrop-blur-sm mb-8">
+        <CardHeader className="border-b border-border">
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <Upload className="w-6 h-6 text-emerald-500" />
             Upload de Arquivo CSV
           </CardTitle>
         </CardHeader>
@@ -216,12 +216,12 @@ export default function UploadData() {
           <div className="space-y-6">
             {/* Type Selection */}
             <div>
-              <Label htmlFor="uploadType" className="text-slate-300">Tipo de Dados</Label>
-              <Select value={uploadType} onValueChange={setUploadType}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+              <Label htmlFor="uploadType" className="text-muted-foreground">Tipo de Dados</Label>
+              <Select value={uploadType} onValueChange={(value: any) => setUploadType(value)}>
+                <SelectTrigger className="bg-input border-border text-foreground">
                   <SelectValue placeholder="Selecione o tipo de dado" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600 text-white">
+                <SelectContent>
                   {entityOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -233,14 +233,14 @@ export default function UploadData() {
 
             {/* File Input */}
             <div>
-              <Label htmlFor="csvFile" className="text-slate-300">Arquivo CSV</Label>
+              <Label htmlFor="csvFile" className="text-muted-foreground">Arquivo CSV</Label>
               <Input
                 id="csvFile"
                 type="file"
                 accept=".csv"
                 onChange={(e) => processUpload(e.target.files?.[0] || null)}
                 disabled={isUploading || isClearing}
-                className="bg-slate-700/50 border-slate-600 text-white file:text-white"
+                className="bg-input border-border text-foreground"
               />
             </div>
 
@@ -268,7 +268,7 @@ export default function UploadData() {
 
             {/* Progress Bar */}
             {(isUploading || isClearing) && (
-              <div className="w-full bg-slate-600 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div
                   className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
@@ -280,12 +280,12 @@ export default function UploadData() {
             {message && (
               <div className={`p-4 rounded-lg border ${
                 message.type === 'success'
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
                   : message.type === 'error'
-                  ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                  ? 'bg-red-500/10 border-red-500/20 text-red-500'
                   : message.type === 'info'
-                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                  : 'bg-orange-500/10 border-orange-500/20 text-orange-400'
+                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                  : 'bg-orange-500/10 border-orange-500/20 text-orange-500'
               }`}>
                 <p>{message.text}</p>
               </div>

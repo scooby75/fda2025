@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,9 +5,9 @@ import { BarChart3, Play, Save, Database } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import StrategyForm from "../strategyyform";
-import StrategyResults from "../strategyresults";
-import BacktestingEngine from "../backtestingengne";
+import StrategyForm from "./StrategyForm";
+import StrategyResults from "./StrategyResults";
+import BacktestingEngine from "./BacktestingEngine";
 
 const BacktestingPage = () => {
   const [currentStrategy, setCurrentStrategy] = useState(null);
