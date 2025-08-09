@@ -9,10 +9,8 @@ import { Upload, Database, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type TableName = 'gamedata' | 'dailygame' | 'rankinghome' | 'rankingaway';
-
 export default function UploadData() {
-  const [uploadType, setUploadType] = useState<TableName>('gamedata');
+  const [uploadType, setUploadType] = useState<string>('gamedata');
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState<{type: string, text: string} | null>(null);
@@ -20,10 +18,10 @@ export default function UploadData() {
   const { toast } = useToast();
 
   const entityOptions = [
-    { value: 'gamedata' as TableName, label: 'Dados Históricos (GameData)', table: 'gamedata' as TableName },
-    { value: 'dailygame' as TableName, label: 'Jogos do Dia (DailyGame)', table: 'dailygame' as TableName },
-    { value: 'rankinghome' as TableName, label: 'Ranking Mandantes (RankingHome)', table: 'rankinghome' as TableName },
-    { value: 'rankingaway' as TableName, label: 'Ranking Visitantes (RankingAway)', table: 'rankingaway' as TableName },
+    { value: 'gamedata', label: 'Dados Históricos (GameData)' },
+    { value: 'dailygame', label: 'Jogos do Dia (DailyGame)' },
+    { value: 'rankinghome', label: 'Ranking Mandantes (RankingHome)' },
+    { value: 'rankingaway', label: 'Ranking Visitantes (RankingAway)' },
   ];
 
   const processUpload = async (file: File | null) => {
@@ -97,16 +95,23 @@ export default function UploadData() {
       for (let i = 0; i < dataArray.length; i += batchSize) {
         const batch = dataArray.slice(i, i + batchSize);
         
-        // Use explicit table name instead of dynamic reference
+        // Use explicit table operations to avoid type issues
         let insertResult;
-        if (selectedEntity.table === 'gamedata') {
-          insertResult = await supabase.from('gamedata').insert(batch);
-        } else if (selectedEntity.table === 'dailygame') {
-          insertResult = await supabase.from('dailygame').insert(batch);
-        } else if (selectedEntity.table === 'rankinghome') {
-          insertResult = await supabase.from('rankinghome').insert(batch);
-        } else if (selectedEntity.table === 'rankingaway') {
-          insertResult = await supabase.from('rankingaway').insert(batch);
+        switch (uploadType) {
+          case 'gamedata':
+            insertResult = await supabase.from('gamedata').insert(batch);
+            break;
+          case 'dailygame':
+            insertResult = await supabase.from('dailygame').insert(batch);
+            break;
+          case 'rankinghome':
+            insertResult = await supabase.from('rankinghome').insert(batch);
+            break;
+          case 'rankingaway':
+            insertResult = await supabase.from('rankingaway').insert(batch);
+            break;
+          default:
+            throw new Error('Tipo de tabela não suportado');
         }
 
         if (insertResult?.error) {
@@ -166,16 +171,23 @@ export default function UploadData() {
     });
 
     try {
-      // Use explicit table name instead of dynamic reference
+      // Use explicit table operations to avoid type issues
       let deleteResult;
-      if (selectedEntity.table === 'gamedata') {
-        deleteResult = await supabase.from('gamedata').delete().neq('id', 0);
-      } else if (selectedEntity.table === 'dailygame') {
-        deleteResult = await supabase.from('dailygame').delete().neq('id', 0);
-      } else if (selectedEntity.table === 'rankinghome') {
-        deleteResult = await supabase.from('rankinghome').delete().neq('id', 0);
-      } else if (selectedEntity.table === 'rankingaway') {
-        deleteResult = await supabase.from('rankingaway').delete().neq('id', 0);
+      switch (uploadType) {
+        case 'gamedata':
+          deleteResult = await supabase.from('gamedata').delete().neq('id_jogo', 0);
+          break;
+        case 'dailygame':
+          deleteResult = await supabase.from('dailygame').delete().neq('id', 0);
+          break;
+        case 'rankinghome':
+          deleteResult = await supabase.from('rankinghome').delete().neq('id', 0);
+          break;
+        case 'rankingaway':
+          deleteResult = await supabase.from('rankingaway').delete().neq('id', 0);
+          break;
+        default:
+          throw new Error('Tipo de tabela não suportado');
       }
 
       if (deleteResult?.error) throw deleteResult.error;
@@ -234,7 +246,7 @@ export default function UploadData() {
             {/* Type Selection */}
             <div>
               <Label htmlFor="uploadType" className="text-muted-foreground">Tipo de Dados</Label>
-              <Select value={uploadType} onValueChange={(value: TableName) => setUploadType(value)}>
+              <Select value={uploadType} onValueChange={setUploadType}>
                 <SelectTrigger className="bg-input border-border text-foreground">
                   <SelectValue placeholder="Selecione o tipo de dado" />
                 </SelectTrigger>
