@@ -1,18 +1,12 @@
 
 import React, { useState } from "react";
-
 import { GameData } from "@/entities/GameData";
 import { DailyGame } from "@/entities/DailyGame";
 import { RankingHome } from "@/entities/RankingHome";
 import { RankingAway } from "@/entities/RankingAway";
 import { UploadFile } from "@/integrations/Core";
-
-// UI Components
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-
-// New UI component imports
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,8 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// Icons
 import {
   Upload,
   ArrowLeft,
@@ -32,7 +24,6 @@ import {
   CalendarDays,
   Info,
 } from "lucide-react";
-
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -68,7 +59,6 @@ export default function UploadData() {
     });
 
     try {
-      // Simulate upload progress
       const progressInterval = setInterval(() => {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
@@ -93,20 +83,25 @@ export default function UploadData() {
 
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
 
-      setMessage({
-        type: "info",
-        text: "Convertendo dados do CSV para o formato correto..."
-      });
+      let EntityClass;
+      switch (entityType) {
+        case 'GameData':
+          EntityClass = GameData;
+          break;
+        case 'DailyGame':
+          EntityClass = DailyGame;
+          break;
+        case 'RankingHome':
+          EntityClass = RankingHome;
+          break;
+        case 'RankingAway':
+          EntityClass = RankingAway;
+          break;
+        default:
+          throw new Error('Tipo de entidade inválido');
+      }
 
-      const Entity = entityType === 'GameData'
-        ? GameData
-        : entityType === 'DailyGame'
-        ? DailyGame
-        : entityType === 'RankingHome'
-        ? RankingHome
-        : RankingAway;
-
-      const schema = Entity.schema();
+      const schema = EntityClass.schema();
       const schemaProperties = Object.keys(schema.properties);
 
       const dataArray = [];
@@ -163,7 +158,7 @@ export default function UploadData() {
         const batch = dataArray.slice(i, i + importBatchSize);
 
         try {
-          await Entity.bulkCreate(batch);
+          await EntityClass.bulkCreate(batch);
           importedCount += batch.length;
 
           setMessage({
@@ -178,7 +173,7 @@ export default function UploadData() {
           });
           for (const record of batch) {
             try {
-              await Entity.create(record);
+              await EntityClass.create(record);
               importedCount++;
             } catch (singleError) {
               console.warn('Erro ao importar registro individual:', singleError);
@@ -221,20 +216,30 @@ export default function UploadData() {
     });
 
     try {
-      const Entity = entityType === 'GameData'
-        ? GameData
-        : entityType === 'DailyGame'
-        ? DailyGame
-        : entityType === 'RankingHome'
-        ? RankingHome
-        : RankingAway;
+      let EntityClass;
+      switch (entityType) {
+        case 'GameData':
+          EntityClass = GameData;
+          break;
+        case 'DailyGame':
+          EntityClass = DailyGame;
+          break;
+        case 'RankingHome':
+          EntityClass = RankingHome;
+          break;
+        case 'RankingAway':
+          EntityClass = RankingAway;
+          break;
+        default:
+          throw new Error('Tipo de entidade inválido');
+      }
 
-      const allRecords = await Entity.list();
+      const allRecords = await EntityClass.list();
       let deletedCount = 0;
 
       for (const record of allRecords) {
         try {
-          await Entity.delete(record.id);
+          await EntityClass.delete(record.id);
           deletedCount++;
           setMessage({
             type: "info",
