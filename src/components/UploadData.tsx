@@ -67,7 +67,7 @@ export default function UploadData() {
         const values = lines[i].split(',');
         if (values.length < headers.length) continue;
 
-        const item: any = {};
+        const item: Record<string, any> = {};
         headers.forEach((header, index) => {
           let value = values[index]?.trim();
           
@@ -97,12 +97,20 @@ export default function UploadData() {
       for (let i = 0; i < dataArray.length; i += batchSize) {
         const batch = dataArray.slice(i, i + batchSize);
         
-        const { error } = await supabase
-          .from(selectedEntity.table)
-          .insert(batch);
+        // Use explicit table name instead of dynamic reference
+        let insertResult;
+        if (selectedEntity.table === 'gamedata') {
+          insertResult = await supabase.from('gamedata').insert(batch);
+        } else if (selectedEntity.table === 'dailygame') {
+          insertResult = await supabase.from('dailygame').insert(batch);
+        } else if (selectedEntity.table === 'rankinghome') {
+          insertResult = await supabase.from('rankinghome').insert(batch);
+        } else if (selectedEntity.table === 'rankingaway') {
+          insertResult = await supabase.from('rankingaway').insert(batch);
+        }
 
-        if (error) {
-          console.warn(`Erro no lote ${i}-${i + batch.length}:`, error);
+        if (insertResult?.error) {
+          console.warn(`Erro no lote ${i}-${i + batch.length}:`, insertResult.error);
         } else {
           importedCount += batch.length;
         }
@@ -158,12 +166,19 @@ export default function UploadData() {
     });
 
     try {
-      const { error } = await supabase
-        .from(selectedEntity.table)
-        .delete()
-        .neq('id', 0);
+      // Use explicit table name instead of dynamic reference
+      let deleteResult;
+      if (selectedEntity.table === 'gamedata') {
+        deleteResult = await supabase.from('gamedata').delete().neq('id', 0);
+      } else if (selectedEntity.table === 'dailygame') {
+        deleteResult = await supabase.from('dailygame').delete().neq('id', 0);
+      } else if (selectedEntity.table === 'rankinghome') {
+        deleteResult = await supabase.from('rankinghome').delete().neq('id', 0);
+      } else if (selectedEntity.table === 'rankingaway') {
+        deleteResult = await supabase.from('rankingaway').delete().neq('id', 0);
+      }
 
-      if (error) throw error;
+      if (deleteResult?.error) throw deleteResult.error;
 
       setMessage({
         type: "success",
