@@ -1,0 +1,12 @@
+name: Install Dependencies
+on: [push, pull_request]
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # ou a versão que você usa
+      - run: npm install
