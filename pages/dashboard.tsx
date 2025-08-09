@@ -1,0 +1,227 @@
+
+import React, { useState, useEffect } from "react";
+import { Strategy } from "@/entities/Strategy";
+import { GameData } from "@/entities/GameData";
+import { User } from "@/entities/User";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import {
+  BarChart3,
+  TrendingUp,
+  Target,
+  Trophy,
+  Plus,
+  Upload,
+  Activity,
+  Zap
+} from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { format } from "date-fns";
+
+import StatsCard from "../components/dashboard/StatsCard";
+import RecentStrategies from "../components/dashboard/RecentStrategies";
+import QuickActions from "../components/dashboard/QuickActions";
+import DataSummary from "../components/dashboard/DataSummary";
+
+export default function Dashboard() {
+  const [strategies, setStrategies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [totalGameRecords, setTotalGameRecords] = useState(0);
+  const [dataSummaryStats, setDataSummaryStats] = useState({
+    uniqueLeagues: 0,
+    latestGame: '-'
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const currentUser = await User.me();
+      const [strategiesData, allGameData] = await Promise.all([
+        Strategy.filter({ created_by: currentUser.email }, "-created_date", 50),
+        GameData.list()
+      ]);
+      
+      setStrategies(strategiesData);
+      setUser(currentUser);
+      
+      setTotalGameRecords(allGameData.length);
+
+      if (allGameData.length > 0) {
+        const validDates = allGameData.filter(g => g.date && !isNaN(new Date(g.date))).map(g => new Date(g.date));
+        const latestGameDate = validDates.length > 0 ? new Date(Math.max(...validDates)) : null;
+
+        setDataSummaryStats({
+          uniqueLeagues: [...new Set(allGameData.map(g => g.league))].length,
+          latestGame: latestGameDate ? format(latestGameDate, 'dd/MM/yyyy') : '-'
+        });
+      } else {
+        setDataSummaryStats({
+          uniqueLeagues: 0,
+          latestGame: '-'
+        });
+      }
+
+    } catch (error) {
+      console.error("Erro ao carregar dados do dashboard:", error);
+    }
+    setIsLoading(false);
+  };
+
+  const getStats = () => {
+    const totalStrategies = strategies.length;
+    const profitableStrategies = strategies.filter(s => s.results?.roi > 0).length;
+    const totalProfit = strategies.reduce((sum, s) => sum + (s.results?.total_profit || 0), 0);
+    const bestStrategy = strategies.reduce((best, current) => 
+      (current.results?.roi || 0) > (best.results?.roi || 0) ? current : best, 
+      { results: { roi: 0 }, name: null }
+    );
+
+    return {
+      totalStrategies,
+      profitableStrategies,
+      totalProfit,
+      bestStrategyROI: bestStrategy.results?.roi || 0,
+      bestStrategyName: bestStrategy.name || "Nenhuma"
+    };
+  };
+
+  const stats = getStats();
+
+  return (
+    <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-1">
+              Dashboard de Backtesting
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              Acompanhe o desempenho das suas estratégias de apostas
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            {user?.role === 'admin' && (
+              <Link to={createPageUrl("UploadData")}>
+                <Button 
+                  variant="outline" 
+                  className="border-border text-muted-foreground hover:bg-muted/20 w-full sm:w-auto"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importar Dados
+                </Button>
+              </Link>
+            )}
+            <Link to={createPageUrl("Backtesting")}>
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Estratégia
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatsCard
+            title="Total de Jogos"
+            value={totalGameRecords.toLocaleString()}
+            icon={BarChart3}
+            bgColor="bg-primary"
+            trend="Base de dados ativa"
+          />
+          <StatsCard
+            title="Estratégias Testadas"
+            value={stats.totalStrategies}
+            icon={Target}
+            bgColor="bg-emerald-600"
+            trend={`${stats.profitableStrategies} lucrativas`}
+          />
+          <StatsCard
+            title="Lucro Total"
+            value={`$${stats.totalProfit.toFixed(2)}`}
+            icon={TrendingUp}
+            bgColor="bg-purple-600"
+            trend="ROI médio: 0.0%"
+          />
+          <StatsCard
+            title="Melhor Estratégia"
+            value={`${stats.bestStrategyROI.toFixed(1)}%`}
+            icon={Trophy}
+            bgColor="bg-orange-600"
+            trend={stats.bestStrategyName}
+          />
+        </div>
+
+        {/* Content Grid */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Performance Chart */}
+          <div className="lg:col-span-2">
+            <Card className="bg-card border-border backdrop-blur-sm">
+              <CardHeader className="border-b border-border">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl text-card-foreground flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Performance das Estratégias
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {strategies.length > 0 ? (
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={strategies.slice(0, 10).map((s, i) => ({
+                        name: s.name,
+                        roi: s.results?.roi || 0,
+                        profit: s.results?.total_profit || 0
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                        <YAxis stroke="hsl(var(--muted-foreground))" />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--popover))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            color: 'hsl(var(--popover-foreground))'
+                          }} 
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="roi" 
+                          stroke="#ffffff" 
+                          strokeWidth={3}
+                          dot={{ fill: '#ffffff', strokeWidth: 2, r: 4 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Activity className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+                    <p className="text-muted-foreground text-lg mb-2">Nenhum dado para exibir</p>
+                    <p className="text-muted-foreground/70">Execute algumas estratégias primeiro</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <DataSummary stats={dataSummaryStats} totalRecords={totalGameRecords} isLoading={isLoading} />
+            <RecentStrategies strategies={strategies} isLoading={isLoading} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
