@@ -1,0 +1,380 @@
+
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { User } from "@/entities/User";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Badge } from "@/components/ui/badge";
+import {
+  BarChart3,
+  TrendingUp,
+  Shield,
+  Database,
+  CheckCircle,
+  ArrowRight,
+  Target,
+  PieChart,
+  Activity,
+  MessageCircle // Added for Telegram contact
+} from "lucide-react";
+
+const PricingCard = ({ title, price, originalPrice, discount, duration, features, isPopular, stripeLink }) => (
+  <div className={`relative bg-slate-800 rounded-2xl shadow-xl border ${
+    isPopular ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-700'
+  } overflow-hidden transform hover:scale-105 transition-all duration-300`}>
+    {isPopular && (
+      <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-emerald-500 to-blue-600 text-white text-center py-2 text-sm font-semibold">
+        Mais Popular
+      </div>
+    )}
+    <div className={`p-8 ${isPopular ? 'pt-16' : ''}`}>
+      <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
+      <div className="mb-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl font-bold text-emerald-400">R$ {price}</span>
+          {originalPrice && (
+            <span className="text-lg text-slate-400 line-through">R$ {originalPrice}</span>
+          )}
+        </div>
+        <p className="text-slate-400 text-sm">{duration}</p>
+        {discount && (
+          <div className="mt-2">
+            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+              {discount}
+            </Badge>
+          </div>
+        )}
+      </div>
+      <ul className="space-y-3 mb-8">
+        {features.map((feature, index) => (
+          <li key={index} className="flex items-center text-slate-300">
+            <CheckCircle className="w-4 h-4 text-emerald-400 mr-3 flex-shrink-0" />
+            {feature}
+          </li>
+        ))}
+      </ul>
+      <a href={stripeLink} target="_blank" rel="noopener noreferrer" className="block">
+        <Button 
+          className={`w-full py-3 font-semibold ${
+            isPopular 
+              ? 'bg-emerald-500 hover:bg-emerald-600 text-slate-900' 
+              : 'bg-slate-700 hover:bg-slate-600 text-white'
+          }`}
+        >
+          Assinar Agora
+        </Button>
+      </a>
+    </div>
+  </div>
+);
+
+const FeatureCard = ({ icon: Icon, title, description }) => (
+  <div className="bg-slate-800 p-6 rounded-lg shadow-lg flex flex-col items-start text-left h-full">
+    <div className="p-3 bg-emerald-500/20 rounded-md mb-4">
+      <Icon className="w-7 h-7 text-emerald-400" />
+    </div>
+    <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
+    <p className="text-slate-400 text-sm leading-relaxed">{description}</p>
+  </div>
+);
+
+const BulletPoint = ({ children }) => (
+  <li className="flex items-start">
+    <CheckCircle className="w-5 h-5 text-emerald-400 mr-3 mt-1 flex-shrink-0" />
+    <span className="text-slate-300">{children}</span>
+  </li>
+);
+
+export default function LandingPage() {
+  const [user, setUser] = React.useState(null);
+  const [isLoadingLogin, setIsLoadingLogin] = React.useState(false);
+
+  React.useEffect(() => {
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    try {
+      const currentUser = await User.me();
+      setUser(currentUser);
+    } catch (error) {
+      setUser(null);
+    }
+  };
+
+  const handleLogin = async () => {
+    setIsLoadingLogin(true);
+    try {
+      await User.login();
+      // Login will redirect, so no need to setIsLoadingLogin(false) here unless error handling changes
+    } catch (error) {
+      console.error("Erro no login:", error);
+      setIsLoadingLogin(false);
+    }
+  };
+  
+  const pricingPlans = [
+    {
+      title: "Plano Trimestral",
+      price: "99,90",
+      duration: "3 meses",
+      stripeLink: "https://buy.stripe.com/cNibJ03X11oG3Ga9HoeZ200",
+      features: [
+        "Acesso completo ao sistema",
+        "Backtesting ilimitado",
+        "Análises detalhadas",
+        "Suporte por email"
+      ]
+    },
+    {
+      title: "Plano Semestral",
+      price: "169,90",
+      originalPrice: "199,80",
+      discount: "Economize 15%",
+      duration: "6 meses",
+      isPopular: true,
+      stripeLink: "https://buy.stripe.com/00waEW6599Vc7Wq9HoeZ201",
+      features: [
+        "Acesso completo ao sistema",
+        "Backtesting ilimitado",
+        "Análises detalhadas",
+        "Suporte pelo Telegram",
+        "Relatórios avançados"
+      ]
+    },
+    {
+      title: "Plano Anual",
+      price: "299,90",
+      originalPrice: "399,60",
+      discount: "Economize 25%",
+      duration: "12 meses",
+      stripeLink: "https://buy.stripe.com/4gMdR83X16J00tY9HoeZ202",
+      features: [
+        "Acesso completo ao sistema",
+        "Backtesting ilimitado",
+        "Análises detalhadas",
+        "Suporte prioritário Telegram",
+        "Relatórios avançados",
+        "Acesso antecipado a novas features"
+      ]
+    }
+  ];
+
+  // Logged-in and approved user view
+  if (user && user.status === 'approved') {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6">
+        <div className="text-center max-w-2xl">
+          <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
+            <BarChart3 className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            Bem-vindo de volta, {user.full_name}!
+          </h1>
+          <p className="text-xl text-slate-300 mb-10">
+            Continue sua jornada de análise e otimização de estratégias de futebol.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to={createPageUrl("Dashboard")}>
+              <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-semibold px-8 py-3 w-full sm:w-auto">
+                <BarChart3 className="w-5 h-5 mr-2" />
+                Acessar Dashboard
+              </Button>
+            </Link>
+            <Link to={createPageUrl("Backtesting")}>
+              <Button size="lg" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-emerald-400 w-full sm:w-auto">
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Novo Backtesting
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  // Public landing page view
+  return (
+    <div className="min-h-screen bg-slate-900 text-white">
+      {/* Floating Telegram Contact */}
+      <a
+        href="https://t.me/Lyssandro"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+      >
+        <MessageCircle className="w-6 h-6" />
+      </a>
+
+      {/* Header */}
+      <header className="container mx-auto px-6 py-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold">Football Data Analysis</span>
+          </div>
+          <Button
+            onClick={handleLogin}
+            disabled={isLoadingLogin}
+            variant="outline"
+            className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-emerald-400 font-semibold"
+          >
+            {isLoadingLogin ? "Entrando..." : "Fazer Login"}
+          </Button>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="py-20 md:py-32">
+        <div className="container mx-auto px-6 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            Plataforma Profissional de <br />
+            <span className="bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
+              Backtesting de Futebol
+            </span>
+          </h1>
+          <p className="text-lg md:text-xl text-slate-300 mb-12 max-w-3xl mx-auto">
+            Analise suas estratégias de apostas esportivas com dados reais, estatísticas avançadas
+            e insights profissionais para maximizar seus resultados.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              onClick={handleLogin}
+              disabled={isLoadingLogin}
+              size="lg"
+              className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-semibold px-10 py-3 text-lg"
+            >
+              {isLoadingLogin ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-900 mr-2"></div>
+              ) : null}
+              Começar Análise
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-emerald-400 font-semibold px-10 py-3 text-lg"
+            >
+              <PieChart className="w-5 h-5 mr-2" />
+              Ver Demonstração
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature Cards Section */}
+      <section className="py-16 bg-slate-800/30">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <FeatureCard
+              icon={Database}
+              title="Dados Reais"
+              description="Base de dados completa com milhares de jogos do futebol brasileiro e internacional."
+            />
+            <FeatureCard
+              icon={BarChart3}
+              title="Análise Avançada"
+              description="Estatísticas detalhadas por liga, time, placar e evolução temporal das estratégias."
+            />
+            <FeatureCard
+              icon={TrendingUp}
+              title="ROI Otimizado"
+              description="Identifique as estratégias mais lucrativas e minimize riscos com dados precisos."
+            />
+            <FeatureCard
+              icon={Shield}
+              title="Gestão de Risco"
+              description="Analise sequências de vitórias e derrotas para otimizar seu bankroll."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-20 md:py-28 bg-slate-800/30">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Planos de Assinatura</h2>
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+              Escolha o plano ideal para suas necessidades de análise e backtesting
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {pricingPlans.map((plan, index) => (
+              <PricingCard 
+                key={index} 
+                {...plan} 
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Recursos Profissionais Section */}
+      <section className="py-20 md:py-28">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white">Recursos Profissionais</h2>
+          </div>
+          <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-x-12 gap-y-8">
+            <div>
+              <h3 className="text-2xl font-semibold text-emerald-400 mb-6">Análises Detalhadas</h3>
+              <ul className="space-y-3">
+                <BulletPoint>Top 10 Ligas Mais Lucrativas</BulletPoint>
+                <BulletPoint>Top 10 Equipes Mais Rentáveis</BulletPoint>
+                <BulletPoint>5 Placares Mais Comuns com Frequência</BulletPoint>
+                <BulletPoint>Sequências de Vitórias e Derrotas</BulletPoint>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-2xl font-semibold text-emerald-400 mb-6">Funcionalidades</h3>
+              <ul className="space-y-3">
+                <BulletPoint>Filtros Estatísticos Avançados</BulletPoint>
+                <BulletPoint>Filtros Avançados por Time, Liga e Data</BulletPoint>
+                <BulletPoint>Salvamento de Estratégias Favoritas</BulletPoint>
+                <BulletPoint>Gráficos de Evolução Temporal</BulletPoint>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="py-20 bg-slate-800/50">
+        <div className="container mx-auto px-6 text-center">
+          <Target className="w-12 h-12 text-emerald-400 mx-auto mb-6" />
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Pronto para Otimizar suas Estratégias?
+          </h2>
+          <p className="text-lg text-slate-300 mb-10 max-w-xl mx-auto">
+            Junte-se aos analistas profissionais que já maximizam seus resultados
+          </p>
+          <Button
+            onClick={handleLogin}
+            disabled={isLoadingLogin}
+            size="lg"
+            className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-semibold px-12 py-4 text-lg"
+          >
+            {isLoadingLogin ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-900 mr-2"></div>
+              ) : null}
+            Começar Agora
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-slate-800">
+        <div className="container mx-auto px-6 text-center">
+          <p className="text-slate-400">
+            © 2023 Football Data Analysis. Todos os direitos reservados.
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
