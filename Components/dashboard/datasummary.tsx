@@ -1,99 +1,87 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Users, Calendar, Target } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface Stats {
-  totalGames: number;
-  totalStrategies: number;
-  totalBankrolls: number;
-  totalTransactions: number;
-}
+import { Database, Users, Activity, TrendingUp } from "lucide-react";
 
 interface DataSummaryProps {
-  stats: Stats;
+  stats: any;
   totalRecords: number;
   isLoading: boolean;
 }
 
 export default function DataSummary({ stats, totalRecords, isLoading }: DataSummaryProps) {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="bg-card border-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Skeleton className="h-4 w-[100px]" />
+              <Skeleton className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-[60px] mb-2" />
+              <Skeleton className="h-3 w-[120px]" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  const summaryData = [
+    {
+      title: "Total de Registros",
+      value: totalRecords?.toLocaleString() || "0",
+      description: "Jogos na base de dados",
+      icon: Database,
+      color: "text-blue-600"
+    },
+    {
+      title: "Ligas Ativas",
+      value: stats?.leagues || "0",
+      description: "Competições diferentes",
+      icon: Activity,
+      color: "text-green-600"
+    },
+    {
+      title: "Times Únicos",
+      value: stats?.teams || "0",
+      description: "Equipes cadastradas",
+      icon: Users,
+      color: "text-purple-600"
+    },
+    {
+      title: "Última Atualização",
+      value: stats?.lastUpdate || "N/A",
+      description: "Dados mais recentes",
+      icon: TrendingUp,
+      color: "text-orange-600"
+    }
+  ];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total de Jogos
-          </CardTitle>
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-4 w-[100px]" />
-          ) : (
-            <div className="text-2xl font-bold text-card-foreground">{stats.totalGames}</div>
-          )}
-          <p className="text-xs text-muted-foreground mt-1">
-            {isLoading ? <Skeleton className="h-3 w-[80px]" /> : `de ${totalRecords} registros`}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total de Estratégias
-          </CardTitle>
-          <Target className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-4 w-[100px]" />
-          ) : (
-            <div className="text-2xl font-bold text-card-foreground">{stats.totalStrategies}</div>
-          )}
-          <p className="text-xs text-muted-foreground mt-1">
-            {isLoading ? <Skeleton className="h-3 w-[80px]" /> : `de ${totalRecords} registros`}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total de Bancas
-          </CardTitle>
-          <Wallet className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-4 w-[100px]" />
-          ) : (
-            <div className="text-2xl font-bold text-card-foreground">{stats.totalBankrolls}</div>
-          )}
-          <p className="text-xs text-muted-foreground mt-1">
-            {isLoading ? <Skeleton className="h-3 w-[80px]" /> : `de ${totalRecords} registros`}
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total de Transações
-          </CardTitle>
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-4 w-[100px]" />
-          ) : (
-            <div className="text-2xl font-bold text-card-foreground">{stats.totalTransactions}</div>
-          )}
-          <p className="text-xs text-muted-foreground mt-1">
-            {isLoading ? <Skeleton className="h-3 w-[80px]" /> : `de ${totalRecords} registros`}
-          </p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {summaryData.map((item, index) => {
+        const IconComponent = item.icon;
+        return (
+          <Card key={index} className="bg-card border-border hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {item.title}
+              </CardTitle>
+              <IconComponent className={`h-4 w-4 ${item.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-card-foreground">{item.value}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {item.description}
+              </p>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

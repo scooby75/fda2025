@@ -1,21 +1,24 @@
+
 // Dixon-Coles Model Implementation
 export class DixonColesModel {
+  private rho: number;
+
   constructor() {
     this.rho = -0.13; // Correlation parameter for low-scoring games
   }
 
   // Calculate Poisson probability
-  poissonProbability(lambda, k) {
+  poissonProbability(lambda: number, k: number): number {
     return Math.exp(-lambda) * Math.pow(lambda, k) / this.factorial(k);
   }
 
-  factorial(n) {
+  factorial(n: number): number {
     if (n <= 1) return 1;
     return n * this.factorial(n - 1);
   }
 
   // Dixon-Coles adjustment factor
-  tau(x, y, lambda, mu) {
+  tau(x: number, y: number, lambda: number, mu: number): number {
     if (x === 0 && y === 0) {
       return 1 - lambda * mu * this.rho;
     } else if (x === 0 && y === 1) {
@@ -29,7 +32,7 @@ export class DixonColesModel {
   }
 
   // Calculate probability of exact score
-  calculateScoreProbability(homeGoals, awayGoals, homeRate, awayRate) {
+  calculateScoreProbability(homeGoals: number, awayGoals: number, homeRate: number, awayRate: number): number {
     const poissonHome = this.poissonProbability(homeRate, homeGoals);
     const poissonAway = this.poissonProbability(awayRate, awayGoals);
     const adjustment = this.tau(homeGoals, awayGoals, homeRate, awayRate);
@@ -38,7 +41,7 @@ export class DixonColesModel {
   }
 
   // Calculate match outcome probabilities
-  calculateMatchProbabilities(homeRate, awayRate) {
+  calculateMatchProbabilities(homeRate: number, awayRate: number) {
     let homeWin = 0;
     let draw = 0;
     let awayWin = 0;
@@ -68,7 +71,7 @@ export class DixonColesModel {
   }
 
   // Calculate goals probabilities
-  calculateGoalsProbabilities(homeRate, awayRate) {
+  calculateGoalsProbabilities(homeRate: number, awayRate: number) {
     let over15 = 0;
     let over25 = 0;
     let over35 = 0;
@@ -96,7 +99,7 @@ export class DixonColesModel {
   }
 
   // Calculate BTTS probability
-  calculateBTTSProbability(homeRate, awayRate) {
+  calculateBTTSProbability(homeRate: number, awayRate: number) {
     let bttsYes = 0;
 
     // Calculate probabilities for scores up to 5-5
@@ -117,7 +120,7 @@ export class DixonColesModel {
   }
 
   // Calculate attack and defense rates from recent games
-  calculateTeamRates(recentGames, isHome) {
+  calculateTeamRates(recentGames: any[], isHome: boolean) {
     if (!recentGames || recentGames.length === 0) {
       return { attackRate: 1.3, defenseRate: 1.3 }; // League average fallback
     }
@@ -126,7 +129,7 @@ export class DixonColesModel {
     let goalsAgainst = 0;
     let validGames = 0;
 
-    recentGames.forEach(game => {
+    recentGames.forEach((game: any) => {
       if (game.Goals_H_FT != null && game.Goals_A_FT != null) {
         if (isHome) {
           goalsFor += game.Goals_H_FT;
@@ -153,7 +156,7 @@ export class DixonColesModel {
   }
 
   // Main function to calculate all probabilities
-  calculateH2HInsights(homeRecentGames, awayRecentGames, h2hMatches) {
+  calculateH2HInsights(homeRecentGames: any[], awayRecentGames: any[], h2hMatches: any[]) {
     // Calculate team rates from recent form
     const homeRates = this.calculateTeamRates(homeRecentGames, true);
     const awayRates = this.calculateTeamRates(awayRecentGames, false);
@@ -194,7 +197,7 @@ export class DixonColesModel {
   }
 
   // Calculate fair odds (100 / probability%)
-  calculateFairOdds(probability) {
+  calculateFairOdds(probability: number): number {
     return probability > 0 ? (1 / probability) : 999;
   }
 }

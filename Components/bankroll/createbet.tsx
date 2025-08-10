@@ -72,7 +72,23 @@ interface CreateBetProps {
   initialData?: Partial<TransactionData>;
 }
 
-const initialFormState = {
+interface FormData {
+  bankroll_id: string;
+  event_name: string;
+  event_date: string;
+  competition: string;
+  strategy_name: string;
+  market: string;
+  stake: string;
+  odds: string;
+  result: string;
+  profit: number;
+  description: string;
+  tags: string[];
+  sport: string;
+}
+
+const initialFormState: FormData = {
   bankroll_id: "",
   event_name: "",
   event_date: "",
@@ -84,7 +100,8 @@ const initialFormState = {
   result: "pending",
   profit: 0,
   description: "",
-  tags: [] as string[]
+  tags: [],
+  sport: "Futebol"
 };
 
 export default function CreateBet({
@@ -95,7 +112,7 @@ export default function CreateBet({
   transaction,
   initialData
 }: CreateBetProps) {
-  const [formData, setFormData] = useState(initialFormState);
+  const [formData, setFormData] = useState<FormData>(initialFormState);
   const [dailyGames, setDailyGames] = useState<DailyGameData[]>([]);
   const [strategies, setStrategies] = useState<StrategyData[]>([]);
   const [selectedGame, setSelectedGame] = useState<DailyGameData | null>(null);
@@ -112,8 +129,9 @@ export default function CreateBet({
         event_date: transaction.event_date ? new Date(transaction.event_date).toISOString().split('T')[0] : "",
         stake: transaction.stake?.toString() || "",
         odds: transaction.odds?.toString() || "",
-        profit: transaction.profit?.toString() || "0",
+        profit: transaction.profit || 0,
         tags: transaction.tags || [],
+        sport: "Futebol"
       }));
     } else if (initialData) {
        setFormData(prev => ({
@@ -121,12 +139,14 @@ export default function CreateBet({
          ...initialData,
          bankroll_id: bankrollId,
          event_date: initialData.event_date ? new Date(initialData.event_date).toISOString().split('T')[0] : (new Date().toISOString().split('T')[0]),
+         sport: "Futebol"
        }));
     } else {
       setFormData({
         ...initialFormState,
         bankroll_id: bankrollId,
         event_date: new Date().toISOString().split('T')[0],
+        sport: "Futebol"
       });
     }
   }, [transaction, initialData, bankrollId]);
@@ -195,7 +215,7 @@ export default function CreateBet({
         bankroll_id: formData.bankroll_id,
         stake: parseFloat(formData.stake),
         odds: parseFloat(formData.odds),
-        profit: parseFloat(formData.profit.toString() || "0")
+        profit: formData.profit
       };
 
       if (transaction) {
@@ -309,7 +329,7 @@ export default function CreateBet({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="sport" className="text-muted-foreground">Esporte</Label>
-                <Select value={formData.sport} onValueChange={(value) => handleInputChange('sport', value)}>
+                <Select value={formData.sport} onValueChange={(value: string) => handleInputChange('sport', value)}>
                   <SelectTrigger className="bg-input border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
@@ -335,7 +355,7 @@ export default function CreateBet({
               <Label htmlFor="strategy" className="text-muted-foreground">Estratégia</Label>
               <Select
                 value={formData.strategy_name}
-                onValueChange={(strategyName) => {
+                onValueChange={(strategyName: string) => {
                   const selectedStrategy = strategies.find(s => s.name === strategyName);
                   if (selectedStrategy) {
                     handleInputChange('strategy_name', selectedStrategy.name);
