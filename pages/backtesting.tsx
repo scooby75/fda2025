@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Strategy } from "@/entities/Strategy";
 import { GameData } from "@/entities/GameData";
@@ -58,7 +59,7 @@ interface GameDataType {
   season?: number;
   goals_h_ft?: number;
   goals_a_ft?: number;
-  rodada?: number;
+  rodada: number;
   [key: string]: any;
 }
 
@@ -86,10 +87,12 @@ interface BacktestingFormData {
 }
 
 interface SavedStrategyItem {
-  id: number;
+  id: string;
   name: string;
   market: string;
   created_date: string;
+  description?: string;
+  unit_stake?: number;
 }
 
 // Engine compatible Strategy interface
@@ -248,11 +251,11 @@ export default function Backtesting() {
 
   const handleLoadStrategy = (strategy: SavedStrategyItem) => {
     const strategyData: StrategyData = {
-      id: strategy.id.toString(),
+      id: strategy.id,
       name: strategy.name,
-      description: '',
+      description: strategy.description || '',
       market: strategy.market,
-      unit_stake: 1,
+      unit_stake: strategy.unit_stake || 1,
       min_odds: 1,
       max_odds: 10,
       start_date: '',
@@ -409,14 +412,16 @@ export default function Backtesting() {
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
               strategies={strategies.map(s => ({ 
-                id: parseInt(s.id || '0'),
+                id: s.id || '0',
                 name: s.name,
                 market: s.market,
-                created_date: s.created_date || new Date().toISOString()
+                created_date: s.created_date || new Date().toISOString(),
+                description: s.description,
+                unit_stake: s.unit_stake
               }))}
               onLoadStrategy={(strategy) => handleLoadStrategy(strategy)}
-              onDeleteStrategy={async (id: number) => {
-                await Strategy.delete(id);
+              onDeleteStrategy={async (id: string) => {
+                await Strategy.delete(parseInt(id));
                 loadData();
               }}
             />

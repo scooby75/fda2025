@@ -35,7 +35,7 @@ interface TransactionData {
   stake: number;
   odds: number;
   result: 'pending' | 'win' | 'loss' | 'void';
-  profit?: number;
+  profit: number;
   description?: string;
   tags?: string[];
   sport?: string;
@@ -270,6 +270,7 @@ export default function BankrollManagement() {
           <TabsContent value="reports" className="space-y-6">
             <BankrollReports
               bankrolls={bankrolls}
+              selectedBankroll={selectedBankroll}
               transactions={transactions}
               isLoading={isDataLoading}
             />
