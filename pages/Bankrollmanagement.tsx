@@ -6,7 +6,7 @@ import { User } from "@/entities/User";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link, useLocation } from "react-router-dom"; // Added useLocation
+import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
   ArrowLeft,
@@ -17,41 +17,70 @@ import {
   Target,
   DollarSign,
   Activity,
-  BarChart // Added for reports
+  BarChart
 } from "lucide-react";
 
-import BankrollDashboard from "../components/bankroll/BankrollDashboard";
-import BankrollList from "../components/bankroll/BankrollList";
-import CreateBankroll from "../components/bankroll/CreateBankroll";
-import BetsList from "../components/bankroll/BetsList";
-import BankrollReports from "../components/bankroll/reports/BankrollReports"; // New reports component
-import CreateBet from "../components/bankroll/CreateBet"; // Added CreateBet import
+import BankrollDashboard from "../Components/bankroll/bankrolldashboard";
+import BankrollList from "../Components/bankroll/bankrolllist";
+import CreateBankroll from "../Components/bankroll/createbankroll";
+import BetsList from "../Components/bankroll/betlist";
+import BankrollReports from "../Components/bankroll/reports/BankrollReports";
+import CreateBet from "../Components/bankroll/createbet";
+
+interface BankrollData {
+  id: string;
+  name: string;
+  currency: string;
+  current_balance: number;
+  initial_balance: number;
+}
+
+interface TransactionData {
+  id: string;
+  bankroll_id: string;
+  event_name: string;
+  strategy_name: string;
+  market: string;
+  odds: number;
+  stake: number;
+  result: 'win' | 'loss' | 'pending' | 'void';
+  profit: number;
+  event_date: string;
+  competition: string;
+  description?: string;
+  tags?: string[];
+}
+
+interface InitialBetData {
+  event_name: string;
+  event_date: string;
+  competition: string;
+}
 
 export default function BankrollManagement() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [bankrolls, setBankrolls] = useState([]);
-  const [selectedBankroll, setSelectedBankroll] = useState(null);
-  const [transactions, setTransactions] = useState([]);
+  const [bankrolls, setBankrolls] = useState<BankrollData[]>([]);
+  const [selectedBankroll, setSelectedBankroll] = useState<BankrollData | null>(null);
+  const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCreateBet, setShowCreateBet] = useState(false); // Added state for CreateBet modal
-  const [editingTransaction, setEditingTransaction] = useState(null); // Added state for editing transaction
-  const [initialBetData, setInitialBetData] = useState(null); // Added state for initial bet data
+  const [showCreateBet, setShowCreateBet] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
+  const [initialBetData, setInitialBetData] = useState<InitialBetData | null>(null);
 
-  const location = useLocation(); // Initialize useLocation
+  const location = useLocation();
 
-  // Effect to handle URL parameters for pre-filling bet data
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const eventName = params.get('eventName');
     if (eventName) {
-      const betData = {
+      const betData: InitialBetData = {
         event_name: eventName,
         event_date: params.get('eventDate') || '',
         competition: params.get('competition') || '',
       };
       setInitialBetData(betData);
-      setShowCreateBet(true); // Open the dialog automatically
-      setActiveTab("bets"); // Switch to bets tab if creating a bet from URL
+      setShowCreateBet(true);
+      setActiveTab("bets");
     }
   }, [location.search]);
 
@@ -68,10 +97,9 @@ export default function BankrollManagement() {
         BetTransaction.list("-created_date")
       ]);
 
-      // Calculate and update current_balance for each bankroll to ensure data consistency
-      const updatedBankrolls = userBankrolls.map(bankroll => {
-        const bankrollTransactions = allTransactions.filter(t => t.bankroll_id === bankroll.id && t.result !== 'pending');
-        const totalProfit = bankrollTransactions.reduce((sum, t) => sum + (t.profit || 0), 0);
+      const updatedBankrolls = userBankrolls.map((bankroll: any) => {
+        const bankrollTransactions = allTransactions.filter((t: any) => t.bankroll_id === bankroll.id && t.result !== 'pending');
+        const totalProfit = bankrollTransactions.reduce((sum: number, t: any) => sum + (t.profit || 0), 0);
         return {
           ...bankroll,
           current_balance: bankroll.initial_balance + totalProfit,
@@ -84,8 +112,7 @@ export default function BankrollManagement() {
       if (updatedBankrolls.length > 0 && !selectedBankroll) {
         setSelectedBankroll(updatedBankrolls[0]);
       } else if (selectedBankroll) {
-        // Refresh selected bankroll data
-        const refreshedSelected = updatedBankrolls.find(b => b.id === selectedBankroll.id);
+        const refreshedSelected = updatedBankrolls.find((b: any) => b.id === selectedBankroll.id);
         setSelectedBankroll(refreshedSelected || (updatedBankrolls.length > 0 ? updatedBankrolls[0] : null));
       }
       
@@ -100,22 +127,20 @@ export default function BankrollManagement() {
     setActiveTab("dashboard");
   };
 
-  const handleBankrollSelect = (bankroll) => {
+  const handleBankrollSelect = (bankroll: BankrollData) => {
     setSelectedBankroll(bankroll);
     setActiveTab("dashboard");
   };
 
-  const handleEditBet = (bet) => {
-    setInitialBetData(null); // Clear any initial data from URL
+  const handleEditBet = (bet: TransactionData) => {
+    setInitialBetData(null);
     setEditingTransaction(bet);
     setShowCreateBet(true);
   };
 
-  // Function to open the CreateBet modal
   const handleOpenCreateBet = () => {
-    setEditingTransaction(null); // Clear any transaction being edited
-    // Clear any previous auto-filled data if opening manually
-    if (!location.search) { // Only clear if not opened via URL params
+    setEditingTransaction(null);
+    if (!location.search) {
       setInitialBetData(null); 
     }
     setShowCreateBet(true);
@@ -124,7 +149,6 @@ export default function BankrollManagement() {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link to={createPageUrl("Dashboard")}>
             <Button variant="outline" size="icon" className="border-border text-muted-foreground hover:bg-muted/20">
@@ -141,7 +165,6 @@ export default function BankrollManagement() {
           </div>
         </div>
 
-        {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex justify-between items-center">
             <TabsList className="grid w-full max-w-lg grid-cols-4 bg-card border border-border text-muted-foreground">
@@ -204,7 +227,7 @@ export default function BankrollManagement() {
           </TabsContent>
 
           <TabsContent value="bets" className="space-y-6">
-            <div> {/* Wrapper div for the Bets tab content */}
+            <div>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold text-card-foreground">
                   Transações
@@ -222,7 +245,7 @@ export default function BankrollManagement() {
               <BetsList
                 bankrolls={bankrolls}
                 selectedBankroll={selectedBankroll}
-                transactions={transactions}
+                transactions={transactions.filter((t: TransactionData) => t.bankroll_id === selectedBankroll?.id)}
                 onDataChange={loadData}
                 isLoading={isLoading}
                 onEditBet={handleEditBet}
@@ -241,7 +264,7 @@ export default function BankrollManagement() {
             <BankrollReports
               bankrolls={bankrolls}
               selectedBankroll={selectedBankroll}
-              transactions={transactions.filter(t => t.bankroll_id === selectedBankroll?.id)}
+              transactions={transactions.filter((t: TransactionData) => t.bankroll_id === selectedBankroll?.id)}
               isLoading={isLoading}
             />
           </TabsContent>
@@ -249,21 +272,17 @@ export default function BankrollManagement() {
         </Tabs>
       </div>
 
-      {/* Modals */}
-      {/* CreateBankroll is not a modal in the current design, it's a tab content */}
-
       {showCreateBet && selectedBankroll && (
         <CreateBet
           bankrollId={selectedBankroll.id}
           bankrolls={bankrolls}
           onClose={() => {
             setShowCreateBet(false);
-            setEditingTransaction(null); // Clear editing state on close
-            // Clear any previous auto-filled data if opened via URL params, so it doesn't re-open
+            setEditingTransaction(null);
             if (location.search) {
               window.history.replaceState({}, document.title, location.pathname);
             }
-            setInitialBetData(null); // Clear initial data on close
+            setInitialBetData(null);
           }}
           onSave={loadData}
           transaction={editingTransaction}

@@ -122,25 +122,30 @@ export default function CreateBet({
     loadData();
 
     if (transaction) {
-      setFormData(prev => ({
-        ...prev,
-        ...transaction,
+      setFormData({
         bankroll_id: transaction.bankroll_id,
+        event_name: transaction.event_name,
         event_date: transaction.event_date ? new Date(transaction.event_date).toISOString().split('T')[0] : "",
+        competition: transaction.competition,
+        strategy_name: transaction.strategy_name,
+        market: transaction.market,
         stake: transaction.stake?.toString() || "",
         odds: transaction.odds?.toString() || "",
+        result: transaction.result,
         profit: transaction.profit || 0,
+        description: transaction.description || "",
         tags: transaction.tags || [],
         sport: "Futebol"
-      }));
+      });
     } else if (initialData) {
-       setFormData(prev => ({
-         ...initialFormState,
-         ...initialData,
-         bankroll_id: bankrollId,
-         event_date: initialData.event_date ? new Date(initialData.event_date).toISOString().split('T')[0] : (new Date().toISOString().split('T')[0]),
-         sport: "Futebol"
-       }));
+      setFormData({
+        ...initialFormState,
+        bankroll_id: bankrollId,
+        event_name: initialData.event_name || "",
+        event_date: initialData.event_date ? new Date(initialData.event_date).toISOString().split('T')[0] : (new Date().toISOString().split('T')[0]),
+        competition: initialData.competition || "",
+        sport: "Futebol"
+      });
     } else {
       setFormData({
         ...initialFormState,
@@ -187,13 +192,13 @@ export default function CreateBet({
 
     setFormData(prev => ({
       ...prev,
-      [field]: value,
+      [field]: value.toString(),
       profit: parseFloat(newProfit.toFixed(2))
     }));
   };
 
   const handleGameSelect = (gameId: string) => {
-    const game = dailyGames.find(g => g.id === gameId);
+    const game = dailyGames.find((g: DailyGameData) => g.id === gameId);
     if (game) {
       setSelectedGame(game);
       setFormData(prev => ({
