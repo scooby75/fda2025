@@ -34,7 +34,7 @@ interface TransactionData {
   market: string;
   stake: number;
   odds: number;
-  result?: 'pending' | 'win' | 'loss' | 'void';
+  result: 'pending' | 'win' | 'loss' | 'void';
   profit?: number;
   description?: string;
   tags?: string[];

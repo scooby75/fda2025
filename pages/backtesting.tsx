@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Strategy } from "@/entities/Strategy";
 import { GameData } from "@/entities/GameData";
@@ -87,7 +86,7 @@ interface BacktestingFormData {
 }
 
 interface SavedStrategyItem {
-  id: string;
+  id: number;
   name: string;
   market: string;
   created_date: string;
@@ -249,7 +248,7 @@ export default function Backtesting() {
 
   const handleLoadStrategy = (strategy: SavedStrategyItem) => {
     const strategyData: StrategyData = {
-      id: strategy.id,
+      id: strategy.id.toString(),
       name: strategy.name,
       description: '',
       market: strategy.market,
@@ -415,12 +414,7 @@ export default function Backtesting() {
                 market: s.market,
                 created_date: s.created_date || new Date().toISOString()
               }))}
-              onLoadStrategy={(strategy) => handleLoadStrategy({
-                id: strategy.id.toString(),
-                name: strategy.name,
-                market: strategy.market,
-                created_date: strategy.created_date
-              })}
+              onLoadStrategy={(strategy) => handleLoadStrategy(strategy)}
               onDeleteStrategy={async (id: number) => {
                 await Strategy.delete(id);
                 loadData();
