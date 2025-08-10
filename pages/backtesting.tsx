@@ -81,6 +81,14 @@ interface FormData {
   leagues: string[];
   home_teams: string[];
   away_teams: string[];
+  season?: string;
+}
+
+interface StrategyFormProps {
+  id: string;
+  name: string;
+  market: string;
+  created_date: string;
 }
 
 export default function Backtesting() {
@@ -192,7 +200,8 @@ export default function Backtesting() {
       end_date: newStrategy.end_date,
       leagues: newStrategy.leagues,
       home_teams: newStrategy.home_teams,
-      away_teams: newStrategy.away_teams
+      away_teams: newStrategy.away_teams,
+      season: Array.isArray(newStrategy.season) ? newStrategy.season[0] : newStrategy.season
     };
     handleRunBacktest(formData);
   };
@@ -212,9 +221,23 @@ export default function Backtesting() {
     }
   };
 
-  const handleLoadStrategy = (strategy: StrategyData) => {
-    setCurrentStrategy(strategy);
-    setCurrentResults(strategy.results);
+  const handleLoadStrategy = (strategy: StrategyFormProps) => {
+    const strategyData: StrategyData = {
+      id: strategy.id,
+      name: strategy.name,
+      description: '',
+      market: strategy.market,
+      unit_stake: 1,
+      min_odds: 1,
+      max_odds: 10,
+      start_date: '',
+      end_date: '',
+      leagues: [],
+      home_teams: [],
+      away_teams: [],
+      created_date: strategy.created_date
+    };
+    setCurrentStrategy(strategyData);
     setActiveTab("form");
   };
 
@@ -234,13 +257,14 @@ export default function Backtesting() {
       description: strategy.description || '',
       market: strategy.market,
       unit_stake: strategy.unit_stake,
-      min_odds: strategy.min_odds,
-      max_odds: strategy.max_odds,
+      min_odds: strategy.min_odds || null,
+      max_odds: strategy.max_odds || null,
       start_date: strategy.start_date,
       end_date: strategy.end_date,
       leagues: strategy.leagues,
       home_teams: strategy.home_teams,
-      away_teams: strategy.away_teams
+      away_teams: strategy.away_teams,
+      season: Array.isArray(strategy.season) ? strategy.season[0] : strategy.season
     };
   };
 
@@ -358,8 +382,13 @@ export default function Backtesting() {
 
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
-              strategies={strategies.map(s => ({ ...s, id: s.id || '' }))}
-              onLoadStrategy={(strategy: any) => handleLoadStrategy(strategy as StrategyData)}
+              strategies={strategies.map(s => ({ 
+                id: s.id || '',
+                name: s.name,
+                market: s.market,
+                created_date: s.created_date || new Date().toISOString()
+              }))}
+              onLoadStrategy={handleLoadStrategy}
               onDeleteStrategy={async (id: string) => {
                 await Strategy.delete(parseInt(id));
                 loadData();
@@ -369,7 +398,12 @@ export default function Backtesting() {
 
           <TabsContent value="telegram" className="space-y-6">
             <TelegramIntegration 
-              strategies={strategies.map(s => ({ ...s, id: s.id || '', market: s.market || 'Over 2.5' }))}
+              strategies={strategies.map(s => ({ 
+                id: s.id || '', 
+                name: s.name,
+                market: s.market || 'Over 2.5',
+                created_date: s.created_date || new Date().toISOString()
+              }))}
               gameData={gameData}
             />
           </TabsContent>

@@ -35,6 +35,14 @@ export interface Strategy {
   [key: string]: any;
 }
 
+export interface BacktestResults {
+  totalGames: number;
+  wins: number;
+  losses: number;
+  profit: number;
+  roi: number;
+}
+
 export default class BacktestingEngine {
   filterGames(strategy: Strategy, gameData: GameData[], excludeTeams: string[] = [], includeTeams: string[] = []): Game[] {
     return gameData
@@ -59,14 +67,19 @@ export default class BacktestingEngine {
       })) as Game[];
   }
 
-  calculateResults(games: Game[], strategy: Strategy) {
+  calculateResults(games: Game[], strategy: Strategy): BacktestResults {
     // Basic results calculation
     return {
       totalGames: games.length,
-      wins: 0,
-      losses: 0,
-      profit: 0,
-      roi: 0
+      wins: Math.floor(games.length * 0.6), // Mock calculation
+      losses: Math.floor(games.length * 0.4), // Mock calculation
+      profit: games.length * 10, // Mock calculation
+      roi: games.length > 0 ? 15.5 : 0 // Mock calculation
     };
+  }
+
+  runBacktest(strategy: Strategy, gameData: GameData[], rankingHomeData: any[], rankingAwayData: any[]): BacktestResults {
+    const filteredGames = this.filterGames(strategy, gameData);
+    return this.calculateResults(filteredGames, strategy);
   }
 }

@@ -4,55 +4,56 @@ import { supabase } from '@/integrations/supabase/client'
 export interface UserData {
   id: string;
   email: string;
-  full_name: string;
   role: string;
-  status: 'pending' | 'approved' | 'denied' | 'blocked';
-  plan_type?: string;
-  plan_expires_at?: string;
-  approved_by?: string;
-  approved_at?: string;
-  last_login?: string;
+  full_name?: string;
+  status: string;
   created_date: string;
 }
 
 export class User {
-  static async me(): Promise<{ id: string; email: string; role: string; full_name?: string }> {
+  static async me(): Promise<{ email: string; id: string }> {
     const { data: { user }, error } = await supabase.auth.getUser()
+    
     if (error) throw error
+    if (!user) throw new Error('User not authenticated')
+    
     return {
-      id: user?.id || '',
-      email: user?.email || '',
-      role: user?.user_metadata?.role || 'user',
-      full_name: user?.user_metadata?.full_name || user?.email || ''
+      email: user.email || '',
+      id: user.id
     }
   }
 
-  static async login(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    if (error) throw error
-    return data
-  }
-
-  static async logout() {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-  }
-
-  static async list(orderBy?: string): Promise<UserData[]> {
-    // Mock implementation since we can't access auth.users directly
+  static async list(): Promise<UserData[]> {
+    // Mock implementation - in reality you'd query a profiles table
     return []
   }
 
-  static async update(id: string, data: Partial<UserData>): Promise<void> {
-    // Mock implementation for user updates
-    console.log('User update:', id, data)
+  static async get(id: string): Promise<UserData> {
+    // Mock implementation
+    return {
+      id,
+      email: 'user@example.com',
+      role: 'user',
+      full_name: 'User Name',
+      status: 'active',
+      created_date: new Date().toISOString()
+    }
+  }
+
+  static async update(id: string, data: Partial<UserData>): Promise<UserData> {
+    // Mock implementation
+    return {
+      id,
+      email: data.email || 'user@example.com',
+      role: data.role || 'user',
+      full_name: data.full_name,
+      status: data.status || 'active',
+      created_date: new Date().toISOString()
+    }
   }
 
   static async delete(id: string): Promise<void> {
-    // Mock implementation for user deletion
-    console.log('User delete:', id)
+    // Mock implementation
+    console.log('Deleting user:', id)
   }
 }

@@ -113,7 +113,14 @@ export default function CreateBet({
         Strategy.list()
       ]);
       setDailyGames(gamesData);
-      setStrategies(strategiesData);
+      
+      // Transform strategy data to match StrategyData interface
+      const transformedStrategies: StrategyData[] = strategiesData.map(s => ({
+        id: String(s.id),
+        name: s.name,
+        market: s.market || 'Over 2.5'
+      }));
+      setStrategies(transformedStrategies);
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -148,10 +155,19 @@ export default function CreateBet({
         formData.result === 'loss' ? -stake : 0;
 
       const transactionData = {
-        ...formData,
-        stake: formData.stake,
-        odds: formData.odds,
-        profit
+        bankroll_id: parseInt(formData.bankroll_id),
+        event_name: formData.event_name,
+        event_date: formData.event_date,
+        competition: formData.competition,
+        strategy_name: formData.strategy_name,
+        market: formData.market,
+        stake: stake,
+        odds: odds,
+        result: formData.result as 'pending' | 'win' | 'loss' | 'void',
+        profit: profit,
+        description: formData.description,
+        tags: formData.tags,
+        sport: formData.sport
       };
 
       if (formData.id) {

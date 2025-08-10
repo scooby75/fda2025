@@ -43,6 +43,9 @@ interface TransactionData {
   created_date: string;
   event_date: string;
   competition: string;
+  description: string;
+  tags: string[];
+  sport: string;
 }
 
 interface BetsListProps {
@@ -100,8 +103,13 @@ export default function BetsList({
     if (onEditBet) {
       onEditBet(bet);
     } else {
-      // Fallback for older implementation, can be removed later
-      setEditingBet(bet);
+      // Convert TransactionData to FormData for editing
+      const formData = {
+        ...bet,
+        stake: bet.stake.toString(),
+        odds: bet.odds.toString()
+      };
+      setEditingBet(formData as any);
     }
   };
 
@@ -110,7 +118,11 @@ export default function BetsList({
       <CreateBet
         bankrollId={selectedBankroll.id}
         bankrolls={bankrolls}
-        transaction={editingBet}
+        transaction={{
+          ...editingBet,
+          stake: editingBet.stake.toString(),
+          odds: editingBet.odds.toString()
+        }}
         onSave={() => {
           setEditingBet(null);
           onDataChange();
