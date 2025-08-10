@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from "react";
 import { Strategy } from "@/entities/Strategy";
 import { GameData } from "@/entities/GameData";
@@ -87,7 +86,7 @@ interface BacktestingFormData {
   season: string[];
 }
 
-interface SavedStrategyItem {
+interface SavedStrategy {
   id: string;
   name: string;
   market: string;
@@ -250,7 +249,7 @@ export default function Backtesting() {
     }
   };
 
-  const handleLoadStrategy = (strategy: SavedStrategyItem) => {
+  const handleLoadStrategy = (strategy: SavedStrategy) => {
     const strategyData: StrategyData = {
       id: parseInt(strategy.id),
       name: strategy.name,
@@ -444,4 +443,3 @@ export default function Backtesting() {
     </div>
   );
 }
-

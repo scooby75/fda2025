@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from "react";
 import { Bankroll } from "@/entities/Bankroll";
 import { BetTransaction } from "@/entities/BetTransaction";
@@ -236,7 +235,22 @@ export default function BankrollManagement() {
                 />
                 
                 <BetList
+                  bankrolls={bankrolls.map(b => ({ 
+                    id: b.id, 
+                    name: b.name, 
+                    currency: b.currency,
+                    current_balance: b.current_balance,
+                    initial_balance: b.initial_balance
+                  }))}
+                  selectedBankroll={selectedBankroll ? {
+                    id: selectedBankroll.id,
+                    name: selectedBankroll.name,
+                    currency: selectedBankroll.currency,
+                    current_balance: selectedBankroll.current_balance,
+                    initial_balance: selectedBankroll.initial_balance
+                  } : null}
                   transactions={transactions.filter(t => t.bankroll_id === selectedBankroll.id)}
+                  onDataChange={loadData}
                   isLoading={isDataLoading}
                 />
               </div>
@@ -274,4 +288,3 @@ export default function BankrollManagement() {
     </div>
   );
 }
-
