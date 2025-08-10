@@ -118,12 +118,6 @@ export default function BankrollManagement() {
     setActiveTab("bets");
   };
 
-  const handleBetUpdate = (updatedBet: TransactionData) => {
-    setTransactions(prev => 
-      prev.map(bet => bet.id === updatedBet.id ? updatedBet : bet)
-    );
-  };
-
   const handleDeleteBet = async (betId: string) => {
     setIsLoading(true);
     try {
@@ -244,7 +238,6 @@ export default function BankrollManagement() {
                 <BetList
                   transactions={transactions.filter(t => t.bankroll_id === selectedBankroll.id)}
                   isLoading={isDataLoading}
-                  onBetUpdate={handleBetUpdate}
                 />
               </div>
             ) : (
