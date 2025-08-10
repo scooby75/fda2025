@@ -14,8 +14,8 @@ import {
 
 interface User {
   id: string;
-  status: 'pending' | 'approved' | 'blocked';
   full_name: string;
+  status: 'pending' | 'approved' | 'denied' | 'blocked';
 }
 
 interface UserActionsProps {
