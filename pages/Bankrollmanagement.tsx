@@ -1,23 +1,19 @@
-
 import React, { useState, useEffect } from "react";
 import { Bankroll } from "@/entities/Bankroll";
 import { BetTransaction } from "@/entities/BetTransaction";
-import { User } from "@/entities/User";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import {
   ArrowLeft,
   Wallet,
-  Plus,
   TrendingUp,
-  TrendingDown,
-  Target,
+  Plus,
+  BarChart3,
   DollarSign,
-  Activity,
-  BarChart
+  Activity
 } from "lucide-react";
 
 import BankrollDashboard from "../Components/bankroll/bankrolldashboard";
@@ -30,28 +26,28 @@ import CreateBet from "../Components/bankroll/createbet";
 interface BankrollData {
   id: string;
   name: string;
-  currency: string;
-  current_balance: number;
   initial_balance: number;
+  current_balance: number;
   start_date: string;
   is_active: boolean;
   commission_percentage: number;
 }
 
 interface TransactionData {
-  id: string;
+  id?: string;
   bankroll_id: string;
   event_name: string;
-  strategy_name: string;
-  market: string;
-  odds: number;
-  stake: number;
-  result: 'win' | 'loss' | 'pending' | 'void';
-  profit: number;
   event_date: string;
   competition: string;
-  description?: string;
-  tags?: string[];
+  strategy_name: string;
+  market: string;
+  stake: string;
+  odds: string;
+  result: "pending" | "win" | "loss" | "void";
+  profit: number;
+  description: string;
+  tags: string[];
+  sport: string;
   created_date: string;
 }
 
@@ -64,29 +60,13 @@ interface InitialBetData {
 export default function BankrollManagement() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [bankrolls, setBankrolls] = useState<BankrollData[]>([]);
-  const [selectedBankroll, setSelectedBankroll] = useState<BankrollData | null>(null);
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedBankroll, setSelectedBankroll] = useState<BankrollData | null>(null);
+  const [showCreateBankroll, setShowCreateBankroll] = useState(false);
   const [showCreateBet, setShowCreateBet] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<TransactionData | undefined>(undefined);
-  const [initialBetData, setInitialBetData] = useState<Partial<TransactionData> | undefined>(undefined);
-
-  const location = useLocation();
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const eventName = params.get('eventName');
-    if (eventName) {
-      const betData: Partial<TransactionData> = {
-        event_name: eventName,
-        event_date: params.get('eventDate') || '',
-        competition: params.get('competition') || '',
-      };
-      setInitialBetData(betData);
-      setShowCreateBet(true);
-      setActiveTab("bets");
-    }
-  }, [location.search]);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
+  const [initialBetData, setInitialBetData] = useState<InitialBetData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadData();
@@ -95,64 +75,62 @@ export default function BankrollManagement() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const currentUser = await User.me();
-      const [userBankrolls, allTransactions] = await Promise.all([
-        Bankroll.filter({ created_by: currentUser.email }, "-created_date"),
-        BetTransaction.list("-created_date")
+      const [bankrollsData, transactionsData] = await Promise.all([
+        Bankroll.list(),
+        BetTransaction.list()
       ]);
 
-      const updatedBankrolls: BankrollData[] = userBankrolls.map((bankroll: any) => {
-        const bankrollTransactions = allTransactions.filter((t: any) => t.bankroll_id === bankroll.id && t.result !== 'pending');
-        const totalProfit = bankrollTransactions.reduce((sum: number, t: any) => sum + (t.profit || 0), 0);
-        return {
-          ...bankroll,
-          current_balance: bankroll.initial_balance + totalProfit,
-        };
-      });
-      
-      setBankrolls(updatedBankrolls);
-      setTransactions(allTransactions);
-      
-      if (updatedBankrolls.length > 0 && !selectedBankroll) {
-        setSelectedBankroll(updatedBankrolls[0]);
-      } else if (selectedBankroll) {
-        const refreshedSelected = updatedBankrolls.find((b: BankrollData) => b.id === selectedBankroll.id);
-        setSelectedBankroll(refreshedSelected || (updatedBankrolls.length > 0 ? updatedBankrolls[0] : null));
+      setBankrolls(bankrollsData);
+      setTransactions(transactionsData);
+
+      if (bankrollsData.length > 0 && !selectedBankroll) {
+        setSelectedBankroll(bankrollsData[0]);
       }
-      
     } catch (error) {
-      console.error("Erro ao carregar dados da banca:", error);
+      console.error("Error loading data:", error);
     }
     setIsLoading(false);
   };
 
-  const handleBankrollCreated = () => {
-    loadData();
-    setActiveTab("dashboard");
-  };
-
-  const handleBankrollSelect = (bankroll: BankrollData | null) => {
-    setSelectedBankroll(bankroll);
-    setActiveTab("dashboard");
+  const handleCreateBankroll = async (bankroll: BankrollData) => {
+    await loadData();
+    setShowCreateBankroll(false);
   };
 
   const handleEditBet = (bet: TransactionData) => {
-    setInitialBetData(undefined);
     setEditingTransaction(bet);
     setShowCreateBet(true);
   };
 
-  const handleOpenCreateBet = () => {
-    setEditingTransaction(undefined);
-    if (!location.search) {
-      setInitialBetData(undefined); 
-    }
+  const handleSaveBet = async () => {
+    await loadData();
+    setShowCreateBet(false);
+    setEditingTransaction(null);
+    setInitialBetData(null);
+  };
+
+  const handleCreateBetFromGame = (gameData: InitialBetData) => {
+    setInitialBetData(gameData);
     setShowCreateBet(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando dados...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link to={createPageUrl("Dashboard")}>
             <Button variant="outline" size="icon" className="border-border text-muted-foreground hover:bg-muted/20">
@@ -161,138 +139,132 @@ export default function BankrollManagement() {
           </Link>
           <div>
             <h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-1">
-              Gestão de Banca
+              Gestão de Bankroll
             </h1>
             <p className="text-muted-foreground text-lg">
-              Gerencie suas bancas e acompanhe suas apostas
+              Gerencie suas bancas e apostas de forma profissional
             </p>
           </div>
         </div>
 
+        {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="flex justify-between items-center">
-            <TabsList className="grid w-full max-w-lg grid-cols-4 bg-card border border-border text-muted-foreground">
-              <TabsTrigger
-                value="dashboard"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Activity className="w-4 h-4 mr-2" />
-                Dashboard
-              </TabsTrigger>
-              <TabsTrigger
-                value="bankrolls"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Wallet className="w-4 h-4 mr-2" />
-                Bancas
-              </TabsTrigger>
-              <TabsTrigger
-                value="bets"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <Target className="w-4 h-4 mr-2" />
-                Apostas
-              </TabsTrigger>
-               <TabsTrigger
-                value="reports"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                <BarChart className="w-4 h-4 mr-2" />
-                Relatórios
-              </TabsTrigger>
-            </TabsList>
-            
-            <Button 
-              onClick={() => setActiveTab("create")}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+          <TabsList className="grid w-full max-w-2xl grid-cols-5 bg-card border border-border text-muted-foreground">
+            <TabsTrigger
+              value="dashboard"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger
+              value="bankrolls"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <Wallet className="w-4 h-4 mr-2" />
+              Bancas
+            </TabsTrigger>
+            <TabsTrigger
+              value="bets"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <DollarSign className="w-4 h-4 mr-2" />
+              Apostas
+            </TabsTrigger>
+            <TabsTrigger
+              value="reports"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Relatórios
+            </TabsTrigger>
+            <TabsTrigger
+              value="settings"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Plus className="w-4 h-4 mr-2" />
               Nova Banca
-            </Button>
-          </div>
+            </TabsTrigger>
+          </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <BankrollDashboard 
+            <BankrollDashboard
               bankrolls={bankrolls}
+              transactions={transactions.filter((t: TransactionData) => selectedBankroll ? t.bankroll_id === selectedBankroll.id : true)}
               selectedBankroll={selectedBankroll}
-              transactions={transactions.filter((t: TransactionData) => t.bankroll_id === selectedBankroll?.id)}
-              isLoading={isLoading}
-              onBankrollSelect={handleBankrollSelect}
+              onSelectBankroll={setSelectedBankroll}
             />
           </TabsContent>
 
           <TabsContent value="bankrolls" className="space-y-6">
             <BankrollList
               bankrolls={bankrolls}
-              onBankrollSelect={handleBankrollSelect}
-              onDataChange={loadData}
-              isLoading={isLoading}
+              onEdit={(bankroll: BankrollData | null) => {
+                if (bankroll) {
+                  setSelectedBankroll(bankroll);
+                  setShowCreateBankroll(true);
+                }
+              }}
+              onDelete={async (bankrollId: string) => {
+                await Bankroll.delete(bankrollId);
+                loadData();
+              }}
             />
           </TabsContent>
 
           <TabsContent value="bets" className="space-y-6">
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-card-foreground">
-                  Transações
-                </h3>
-                {selectedBankroll && (
-                  <Button
-                    onClick={handleOpenCreateBet}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Aposta
-                  </Button>
-                )}
-              </div>
-              <BetsList
-                bankrolls={bankrolls}
-                selectedBankroll={selectedBankroll}
-                transactions={transactions.filter((t: TransactionData) => t.bankroll_id === selectedBankroll?.id)}
-                onDataChange={loadData}
-                isLoading={isLoading}
-                onEditBet={handleEditBet}
-              />
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold text-foreground">Lista de Apostas</h2>
+              <Button
+                onClick={() => setShowCreateBet(true)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Aposta
+              </Button>
             </div>
-          </TabsContent>
-
-          <TabsContent value="create" className="space-y-6">
-            <CreateBankroll
-              onBankrollCreated={handleBankrollCreated}
-              onCancel={() => setActiveTab("dashboard")}
+            <BetsList
+              transactions={transactions.filter((t: TransactionData) => selectedBankroll ? t.bankroll_id === selectedBankroll.id : true)}
+              onEdit={handleEditBet}
+              onDelete={async (transactionId: string) => {
+                await BetTransaction.delete(parseInt(transactionId));
+                loadData();
+              }}
             />
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-6">
             <BankrollReports
               bankrolls={bankrolls}
+              transactions={transactions}
               selectedBankroll={selectedBankroll}
-              transactions={transactions.filter((t: TransactionData) => t.bankroll_id === selectedBankroll?.id)}
-              isLoading={isLoading}
             />
           </TabsContent>
 
+          <TabsContent value="settings" className="space-y-6">
+            <CreateBankroll
+              onSave={handleCreateBankroll}
+              onCancel={() => setActiveTab("dashboard")}
+            />
+          </TabsContent>
         </Tabs>
-      </div>
 
-      {showCreateBet && selectedBankroll && (
-        <CreateBet
-          bankrollId={selectedBankroll.id}
-          bankrolls={bankrolls}
-          onClose={() => {
-            setShowCreateBet(false);
-            setEditingTransaction(undefined);
-            if (location.search) {
-              window.history.replaceState({}, document.title, location.pathname);
-            }
-            setInitialBetData(undefined);
-          }}
-          onSave={loadData}
-          transaction={editingTransaction}
-          initialData={initialBetData}
-        />
-      )}
+        {/* Modals */}
+        {showCreateBet && (
+          <CreateBet
+            bankrollId={selectedBankroll?.id || ""}
+            bankrolls={bankrolls}
+            onClose={() => {
+              setShowCreateBet(false);
+              setEditingTransaction(null);
+              setInitialBetData(null);
+            }}
+            onSave={handleSaveBet}
+            transaction={editingTransaction as any}
+            initialData={initialBetData as any}
+          />
+        )}
+      </div>
     </div>
   );
 }

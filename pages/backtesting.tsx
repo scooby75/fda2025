@@ -35,6 +35,7 @@ interface StrategyData {
   max_ranking_home?: number;
   min_ranking_away?: number;
   max_ranking_away?: number;
+  created_date?: string;
   [key: string]: any;
 }
 
@@ -83,10 +84,10 @@ export default function Backtesting() {
         RankingAway.list()
       ]);
 
-      setStrategies(strategiesData);
-      setGameData(allGameData);
-      setRankingHomeData(allRankingHome);
-      setRankingAwayData(allRankingAway);
+      setStrategies(strategiesData as StrategyData[]);
+      setGameData(allGameData as GameDataType[]);
+      setRankingHomeData(allRankingHome as RankingData[]);
+      setRankingAwayData(allRankingAway as RankingData[]);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
@@ -223,7 +224,7 @@ export default function Backtesting() {
           </TabsContent>
 
           <TabsContent value="results" className="space-y-6">
-            {currentResults ? (
+            {currentResults && currentStrategy ? (
               <StrategyResults
                 strategy={currentStrategy}
                 results={currentResults}
@@ -254,9 +255,9 @@ export default function Backtesting() {
 
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
-              strategies={strategies}
+              strategies={strategies as any}
               onLoadStrategy={handleLoadStrategy}
-              onDeleteStrategy={async (strategyId: string) => {
+              onDeleteStrategy={async (strategyId: number) => {
                 await Strategy.delete(strategyId);
                 loadData();
               }}
@@ -264,7 +265,10 @@ export default function Backtesting() {
           </TabsContent>
 
           <TabsContent value="telegram" className="space-y-6">
-            <TelegramIntegration />
+            <TelegramIntegration 
+              strategies={strategies}
+              gameData={gameData}
+            />
           </TabsContent>
         </Tabs>
       </div>

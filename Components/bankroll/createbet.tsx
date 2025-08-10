@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { BetTransaction } from "@/entities/BetTransaction";
 import { DailyGame } from "@/entities/DailyGame";
@@ -15,6 +14,7 @@ import { X, Save, Search, Calendar, DollarSign } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface FormData {
+  id?: string;
   bankroll_id: string;
   event_name: string;
   event_date: string;
@@ -154,8 +154,8 @@ export default function CreateBet({
         profit
       };
 
-      if (transaction?.id) {
-        await BetTransaction.update(transaction.id, transactionData);
+      if (formData.id) {
+        await BetTransaction.update(parseInt(formData.id), transactionData);
       } else {
         await BetTransaction.create(transactionData);
       }

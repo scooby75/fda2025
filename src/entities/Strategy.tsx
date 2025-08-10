@@ -6,6 +6,16 @@ type StrategyRow = Database['public']['Tables']['strategy']['Row']
 type StrategyInsert = Database['public']['Tables']['strategy']['Insert']
 
 export class Strategy {
+  static async list(): Promise<StrategyRow[]> {
+    const { data, error } = await supabase
+      .from('strategy')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  }
+
   static async filter(filters: Record<string, any>, orderBy?: string): Promise<StrategyRow[]> {
     let query = supabase.from('strategy').select('*')
     
