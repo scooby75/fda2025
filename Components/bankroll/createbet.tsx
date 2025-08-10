@@ -24,6 +24,54 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+interface BankrollData {
+  id: string;
+  name: string;
+  currency: string;
+  current_balance: number;
+  initial_balance: number;
+}
+
+interface TransactionData {
+  id: string;
+  bankroll_id: string;
+  event_name: string;
+  strategy_name: string;
+  market: string;
+  odds: number;
+  stake: number;
+  result: 'win' | 'loss' | 'pending' | 'void';
+  profit: number;
+  event_date: string;
+  competition: string;
+  description?: string;
+  tags?: string[];
+}
+
+interface DailyGameData {
+  id: string;
+  home: string;
+  away: string;
+  league: string;
+  date: string;
+  time: string;
+}
+
+interface StrategyData {
+  id: string;
+  name: string;
+  market: string;
+}
+
+interface CreateBetProps {
+  bankrollId: string;
+  bankrolls: BankrollData[];
+  onClose: () => void;
+  onSave: () => void;
+  transaction?: TransactionData;
+  initialData?: Partial<TransactionData>;
+}
+
 const initialFormState = {
   bankroll_id: "",
   event_name: "",
@@ -36,7 +84,7 @@ const initialFormState = {
   result: "pending",
   profit: 0,
   description: "",
-  tags: []
+  tags: [] as string[]
 };
 
 export default function CreateBet({
@@ -46,11 +94,11 @@ export default function CreateBet({
   onSave,
   transaction,
   initialData
-}) {
+}: CreateBetProps) {
   const [formData, setFormData] = useState(initialFormState);
-  const [dailyGames, setDailyGames] = useState([]);
-  const [strategies, setStrategies] = useState([]);
-  const [selectedGame, setSelectedGame] = useState(null);
+  const [dailyGames, setDailyGames] = useState<DailyGameData[]>([]);
+  const [strategies, setStrategies] = useState<StrategyData[]>([]);
+  const [selectedGame, setSelectedGame] = useState<DailyGameData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -91,16 +139,16 @@ export default function CreateBet({
         Strategy.filter({ created_by: currentUser.email }, "-created_date")
       ]);
 
-      setDailyGames(games);
-      setStrategies(savedStrategies);
+      setDailyGames(games as DailyGameData[]);
+      setStrategies(savedStrategies as StrategyData[]);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
   };
 
-  const handleInputChange = (field, value) => {
-    let newStake = field === 'stake' ? parseFloat(value) : parseFloat(formData.stake);
-    let newOdds = field === 'odds' ? parseFloat(value) : parseFloat(formData.odds);
+  const handleInputChange = (field: string, value: string | number) => {
+    let newStake = field === 'stake' ? parseFloat(value.toString()) : parseFloat(formData.stake);
+    let newOdds = field === 'odds' ? parseFloat(value.toString()) : parseFloat(formData.odds);
     let newResult = field === 'result' ? value : formData.result;
 
     let newProfit = formData.profit;
@@ -124,7 +172,7 @@ export default function CreateBet({
     }));
   };
 
-  const handleGameSelect = (gameId) => {
+  const handleGameSelect = (gameId: string) => {
     const game = dailyGames.find(g => g.id === gameId);
     if (game) {
       setSelectedGame(game);
@@ -137,7 +185,7 @@ export default function CreateBet({
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -147,23 +195,23 @@ export default function CreateBet({
         bankroll_id: formData.bankroll_id,
         stake: parseFloat(formData.stake),
         odds: parseFloat(formData.odds),
-        profit: parseFloat(formData.profit || 0)
+        profit: parseFloat(formData.profit.toString() || "0")
       };
 
       if (transaction) {
-        await BetTransaction.update(transaction.id, dataToSubmit);
+        await BetTransaction.update(parseInt(transaction.id), dataToSubmit);
       } else {
         await BetTransaction.create(dataToSubmit);
       }
 
-      const bankrollToUpdate = await Bankroll.get(formData.bankroll_id);
+      const bankrollToUpdate = await Bankroll.get(parseInt(formData.bankroll_id));
       const allBets = await BetTransaction.filter({ bankroll_id: formData.bankroll_id });
       const totalProfit = allBets
-        .filter(b => b.result !== 'pending')
-        .reduce((sum, t) => sum + (t.profit || 0), 0);
+        .filter((b: any) => b.result !== 'pending')
+        .reduce((sum: number, t: any) => sum + (t.profit || 0), 0);
 
       const newBalance = bankrollToUpdate.initial_balance + totalProfit;
-      await Bankroll.update(formData.bankroll_id, { current_balance: newBalance });
+      await Bankroll.update(parseInt(formData.bankroll_id), { current_balance: newBalance });
 
       onSave();
     } catch (error) {
@@ -173,7 +221,7 @@ export default function CreateBet({
     setIsLoading(false);
   };
 
-  const filteredGames = dailyGames.filter(game =>
+  const filteredGames = dailyGames.filter((game: DailyGameData) =>
     game.home && game.away && game.league && game.date && game.time
   );
 
@@ -193,14 +241,14 @@ export default function CreateBet({
                 <Label htmlFor="bankroll_id" className="text-muted-foreground">Banca</Label>
                 <Select
                   value={formData.bankroll_id || ''}
-                  onValueChange={(value) => handleInputChange('bankroll_id', value)}
+                  onValueChange={(value: string) => handleInputChange('bankroll_id', value)}
                   required
                 >
                   <SelectTrigger className="bg-input border-border text-foreground">
                     <SelectValue placeholder="Selecione uma banca..." />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border">
-                    {bankrolls?.map(b => (
+                    {bankrolls?.map((b: BankrollData) => (
                       <SelectItem key={b.id} value={b.id} style={{ color: 'rgb(15, 23, 42)' }}>
                         {b.name} ({b.currency} {b.current_balance?.toFixed(2)})
                       </SelectItem>
@@ -219,7 +267,7 @@ export default function CreateBet({
                     <SelectValue placeholder="Selecionar jogo do dia..." />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border text-popover-foreground max-h-60">
-                    {filteredGames.map(game => (
+                    {filteredGames.map((game: DailyGameData) => (
                       <SelectItem key={game.id} value={game.id} style={{ color: 'rgb(15, 23, 42)' }}>
                         <div className="flex flex-col">
                           <span>{game.home} vs {game.away}</span>

@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Target, Plus, Calendar, TrendingUp, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import CreateBet from "./CreateBet";
+import CreateBet from "./createbet";
 import { BetTransaction } from '@/entities/BetTransaction';
 import { Bankroll } from '@/entities/Bankroll';
 import {
@@ -22,6 +22,38 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface BankrollData {
+  id: string;
+  name: string;
+  currency: string;
+  current_balance: number;
+  initial_balance: number;
+}
+
+interface TransactionData {
+  id: string;
+  bankroll_id: string;
+  event_name: string;
+  strategy_name: string;
+  market: string;
+  result: 'win' | 'loss' | 'pending' | 'void';
+  profit: number;
+  stake: number;
+  odds: number;
+  created_date: string;
+  event_date: string;
+  competition: string;
+}
+
+interface BetsListProps {
+  bankrolls: BankrollData[];
+  selectedBankroll: BankrollData | null;
+  transactions: TransactionData[];
+  onDataChange: () => void;
+  isLoading: boolean;
+  onEditBet?: (bet: TransactionData) => void;
+}
+
 export default function BetsList({ 
   bankrolls, 
   selectedBankroll, 
@@ -29,11 +61,11 @@ export default function BetsList({
   onDataChange, 
   isLoading,
   onEditBet
-}) {
+}: BetsListProps) {
   const [showCreateBet, setShowCreateBet] = useState(false);
-  const [editingBet, setEditingBet] = useState(null);
+  const [editingBet, setEditingBet] = useState<TransactionData | null>(null);
   const [activeTab, setActiveTab] = useState("finished");
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, bet: null });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; bet: TransactionData | null }>({ open: false, bet: null });
 
   if (isLoading) {
     return (
@@ -60,11 +92,11 @@ export default function BetsList({
     );
   }
 
-  const bankrollTransactions = transactions.filter(t => t.bankroll_id === selectedBankroll.id);
-  const finishedBets = bankrollTransactions.filter(t => t.result !== 'pending');
-  const pendingBets = bankrollTransactions.filter(t => t.result === 'pending');
+  const bankrollTransactions = transactions.filter((t: TransactionData) => t.bankroll_id === selectedBankroll.id);
+  const finishedBets = bankrollTransactions.filter((t: TransactionData) => t.result !== 'pending');
+  const pendingBets = bankrollTransactions.filter((t: TransactionData) => t.result === 'pending');
 
-  const handleEditClick = (bet) => {
+  const handleEditClick = (bet: TransactionData) => {
     if (onEditBet) {
       onEditBet(bet);
     } else {
@@ -76,8 +108,8 @@ export default function BetsList({
   if (editingBet) {
     return (
       <CreateBet
+        bankrollId={selectedBankroll.id}
         bankrolls={bankrolls}
-        selectedBankroll={selectedBankroll}
         transaction={editingBet}
         onSave={() => {
           setEditingBet(null);
@@ -90,7 +122,7 @@ export default function BetsList({
     );
   }
 
-  const handleDeleteClick = (bet) => {
+  const handleDeleteClick = (bet: TransactionData) => {
     setDeleteDialog({ open: true, bet });
   };
   
@@ -100,17 +132,17 @@ export default function BetsList({
         const betToDelete = deleteDialog.bet;
         const bankrollId = betToDelete.bankroll_id;
 
-        await BetTransaction.delete(betToDelete.id);
+        await BetTransaction.delete(parseInt(betToDelete.id));
 
         // Recalculate balance
-        const bankrollToUpdate = await Bankroll.get(bankrollId);
+        const bankrollToUpdate = await Bankroll.get(parseInt(bankrollId));
         const allBets = await BetTransaction.filter({ bankroll_id: bankrollId });
         const totalProfit = allBets
-          .filter(b => b.result !== 'pending')
-          .reduce((sum, t) => sum + (t.profit || 0), 0);
+          .filter((b: any) => b.result !== 'pending')
+          .reduce((sum: number, t: any) => sum + (t.profit || 0), 0);
         
         const newBalance = bankrollToUpdate.initial_balance + totalProfit;
-        await Bankroll.update(bankrollId, { current_balance: newBalance });
+        await Bankroll.update(parseInt(bankrollId), { current_balance: newBalance });
 
       } catch (error) {
         console.error("Erro ao excluir aposta:", error);
@@ -121,8 +153,7 @@ export default function BetsList({
     }
   };
 
-
-  const BetsTable = ({ bets }) => (
+  const BetsTable = ({ bets }: { bets: TransactionData[] }) => (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
@@ -139,7 +170,7 @@ export default function BetsList({
         </TableHeader>
         <TableBody>
           {bets.length > 0 ? (
-            bets.map((bet) => (
+            bets.map((bet: TransactionData) => (
               <TableRow key={bet.id} className="border-border hover:bg-muted/50">
                 <TableCell className="text-card-foreground">
                   {format(new Date(bet.event_date || bet.created_date), 'dd/MM/yyyy', { locale: ptBR })}
@@ -284,6 +315,18 @@ export default function BetsList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {showCreateBet && (
+        <CreateBet
+          bankrollId={selectedBankroll.id}
+          bankrolls={bankrolls}
+          onClose={() => setShowCreateBet(false)}
+          onSave={() => {
+            setShowCreateBet(false);
+            onDataChange();
+          }}
+        />
+      )}
     </>
   );
 }

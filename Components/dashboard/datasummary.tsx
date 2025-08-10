@@ -1,71 +1,99 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Database } from "lucide-react";
+import { BarChart3, Users, Calendar, Target } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format, parseISO } from "date-fns";
 
-export default function DataSummary({ stats, totalRecords, isLoading }) {
-  if (isLoading) {
-    return (
+interface Stats {
+  totalGames: number;
+  totalStrategies: number;
+  totalBankrolls: number;
+  totalTransactions: number;
+}
+
+interface DataSummaryProps {
+  stats: Stats;
+  totalRecords: number;
+  isLoading: boolean;
+}
+
+export default function DataSummary({ stats, totalRecords, isLoading }: DataSummaryProps) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <Card className="bg-card border-border">
-        <CardHeader className="border-b border-border">
-          <CardTitle className="text-card-foreground">Resumo dos Dados</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Total de Jogos
+          </CardTitle>
+          <BarChart3 className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <Skeleton className="h-4 w-32 bg-muted" />
-              <Skeleton className="h-4 w-8 bg-muted" />
-            </div>
-            <div className="flex justify-between">
-              <Skeleton className="h-4 w-28 bg-muted" />
-              <Skeleton className="h-4 w-8 bg-muted" />
-            </div>
-            <div className="flex justify-between">
-              <Skeleton className="h-4 w-36 bg-muted" />
-              <Skeleton className="h-4 w-12 bg-muted" />
-            </div>
-          </div>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-4 w-[100px]" />
+          ) : (
+            <div className="text-2xl font-bold text-card-foreground">{stats.totalGames}</div>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            {isLoading ? <Skeleton className="h-3 w-[80px]" /> : `de ${totalRecords} registros`}
+          </p>
         </CardContent>
       </Card>
-    );
-  }
 
-  // The getDataStats function and its logic were moved out of this component
-  // as 'stats' is now passed directly as a prop.
+      <Card className="bg-card border-border">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Total de Estratégias
+          </CardTitle>
+          <Target className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-4 w-[100px]" />
+          ) : (
+            <div className="text-2xl font-bold text-card-foreground">{stats.totalStrategies}</div>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            {isLoading ? <Skeleton className="h-3 w-[80px]" /> : `de ${totalRecords} registros`}
+          </p>
+        </CardContent>
+      </Card>
 
-  return (
-    <Card className="bg-card border-border backdrop-blur-sm">
-      <CardHeader className="border-b border-border">
-        <CardTitle className="text-card-foreground flex items-center gap-2">
-          <Zap className="w-5 h-5 text-primary" />
-          Resumo dos Dados
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Jogos no sistema</span>
-            <span className="text-card-foreground font-semibold">{totalRecords.toLocaleString()}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Ligas diferentes</span>
-            <span className="text-card-foreground font-semibold">{stats.uniqueLeagues}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Último jogo importado</span>
-            <span className="text-card-foreground font-semibold">{stats.latestGame}</span>
-          </div>
-        </div>
-        
-        <div className="mt-6 pt-4 border-t border-border">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-            <span className="text-muted-foreground">Dados atualizados</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <Card className="bg-card border-border">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Total de Bancas
+          </CardTitle>
+          <Wallet className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-4 w-[100px]" />
+          ) : (
+            <div className="text-2xl font-bold text-card-foreground">{stats.totalBankrolls}</div>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            {isLoading ? <Skeleton className="h-3 w-[80px]" /> : `de ${totalRecords} registros`}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Total de Transações
+          </CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-4 w-[100px]" />
+          ) : (
+            <div className="text-2xl font-bold text-card-foreground">{stats.totalTransactions}</div>
+          )}
+          <p className="text-xs text-muted-foreground mt-1">
+            {isLoading ? <Skeleton className="h-3 w-[80px]" /> : `de ${totalRecords} registros`}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

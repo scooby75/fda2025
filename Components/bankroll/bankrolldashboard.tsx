@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -96,7 +95,7 @@ export default function BankrollDashboard({
     const hitRate = finishedBets.length > 0 ? (winningBets / finishedBets.length) * 100 : 0;
     
     // ROI calculation changed to be based on the initial bankroll
-    const roi = selectedBankroll?.initial_balance > 0 
+    const roi = selectedBankroll && selectedBankroll.initial_balance > 0 
       ? (totalProfit / selectedBankroll.initial_balance) * 100 
       : 0;
 

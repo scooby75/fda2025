@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,17 +18,35 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export default function BankrollList({ bankrolls, onBankrollSelect, onDataChange, isLoading }) {
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, bankroll: null });
+interface BankrollData {
+  id: string;
+  name: string;
+  currency: string;
+  current_balance: number;
+  initial_balance: number;
+  start_date: string;
+  is_active: boolean;
+  commission_percentage: number;
+}
 
-  const handleDeleteClick = (bankroll) => {
+interface BankrollListProps {
+  bankrolls: BankrollData[];
+  onBankrollSelect: (bankroll: BankrollData) => void;
+  onDataChange: () => void;
+  isLoading: boolean;
+}
+
+export default function BankrollList({ bankrolls, onBankrollSelect, onDataChange, isLoading }: BankrollListProps) {
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; bankroll: BankrollData | null }>({ open: false, bankroll: null });
+
+  const handleDeleteClick = (bankroll: BankrollData) => {
     setDeleteDialog({ open: true, bankroll });
   };
 
   const handleConfirmDelete = async () => {
     if (deleteDialog.bankroll) {
       try {
-        await Bankroll.delete(deleteDialog.bankroll.id);
+        await Bankroll.delete(parseInt(deleteDialog.bankroll.id));
         onDataChange();
         setDeleteDialog({ open: false, bankroll: null });
       } catch (error) {
@@ -74,7 +93,7 @@ export default function BankrollList({ bankrolls, onBankrollSelect, onDataChange
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {bankrolls.map((bankroll) => (
+          {bankrolls.map((bankroll: BankrollData) => (
             <Card key={bankroll.id} className="bg-card border-border hover:bg-muted/20 transition-all duration-300">
               <CardHeader className="border-b border-border">
                 <div className="flex justify-between items-start">
