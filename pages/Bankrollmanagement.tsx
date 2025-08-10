@@ -43,9 +43,9 @@ interface TransactionData {
   competition: string;
   strategy_name: string;
   market: string;
-  stake: string;
-  odds: string;
-  result: "pending" | "win" | "loss";
+  stake: number;
+  odds: number;
+  result: "pending" | "win" | "loss" | "void";
   profit: number;
   description: string;
   tags: string[];
@@ -102,9 +102,9 @@ export default function BankrollManagement() {
         competition: t.competition || '',
         strategy_name: t.strategy_name || '',
         market: t.market || '',
-        stake: String(t.stake),
-        odds: String(t.odds),
-        result: t.result === "void" ? "pending" : t.result as "pending" | "win" | "loss",
+        stake: Number(t.stake),
+        odds: Number(t.odds),
+        result: t.result === "void" ? "void" : t.result as "pending" | "win" | "loss" | "void",
         profit: t.profit || 0,
         description: t.description || '',
         tags: t.tags || [],
@@ -231,10 +231,6 @@ export default function BankrollManagement() {
           <TabsContent value="bankrolls" className="space-y-6">
             <BankrollList
               bankrolls={bankrolls}
-              onDelete={async (bankrollId: string) => {
-                await Bankroll.delete(parseInt(bankrollId));
-                loadData();
-              }}
             />
           </TabsContent>
 
@@ -250,12 +246,12 @@ export default function BankrollManagement() {
               </Button>
             </div>
             <BetsList
+              bankrolls={bankrolls}
+              selectedBankroll={selectedBankroll}
               transactions={transactions.filter((t: TransactionData) => selectedBankroll ? t.bankroll_id === selectedBankroll.id : true)}
-              onEdit={handleEditBet}
-              onDelete={async (transactionId: string) => {
-                await BetTransaction.delete(parseInt(transactionId));
-                loadData();
-              }}
+              onDataChange={loadData}
+              isLoading={isLoading}
+              onEditBet={handleEditBet}
             />
           </TabsContent>
 
@@ -289,8 +285,8 @@ export default function BankrollManagement() {
             onSave={handleSaveBet}
             transaction={editingTransaction ? {
               ...editingTransaction,
-              stake: parseFloat(editingTransaction.stake),
-              odds: parseFloat(editingTransaction.odds)
+              stake: editingTransaction.stake.toString(),
+              odds: editingTransaction.odds.toString()
             } : null}
             initialData={initialBetData}
           />

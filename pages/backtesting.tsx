@@ -20,30 +20,31 @@ import {
   MessageCircle
 } from "lucide-react";
 
-import StrategyForm from "../Components/backtesting/strategyform";
+import StrategyForm from "../Components/backtesting/strategyyform";
 import StrategyResults from "../Components/backtesting/strategyresults";
 import SavedStrategies from "../Components/backtesting/savedstrategies";
-import BacktestingEngine from "../Components/backtesting/backtestingengine";
+import BacktestingEngine from "../components/backtesting/BacktestingEngine";
 import TelegramIntegration from "../Components/backtesting/telegramintegration";
 
 interface StrategyData {
   id?: number;
   name: string;
-  market?: string;
+  description?: string;
+  market: string;
   season?: string | string[];
   min_ranking_home?: number;
   max_ranking_home?: number;
   min_ranking_away?: number;
   max_ranking_away?: number;
   created_date?: string;
-  unit_stake?: number;
-  min_odds?: number;
-  max_odds?: number;
-  start_date?: string;
-  end_date?: string;
-  leagues?: string[];
-  home_teams?: string[];
-  away_teams?: string[];
+  unit_stake: number;
+  min_odds: number;
+  max_odds: number;
+  start_date: string;
+  end_date: string;
+  leagues: string[];
+  home_teams: string[];
+  away_teams: string[];
   results?: any;
   [key: string]: any;
 }
@@ -88,13 +89,30 @@ export default function Backtesting() {
     try {
       const currentUser = await User.me();
       const [strategiesData, allGameData, allRankingHome, allRankingAway] = await Promise.all([
-        Strategy.filter({ created_by: currentUser.email }, "-created_date"),
+        Strategy.filter({ created_by: currentUser.email }),
         GameData.list(),
         RankingHome.list(),
         RankingAway.list()
       ]);
 
-      setStrategies(strategiesData as StrategyData[]);
+      // Transform strategies data
+      const transformedStrategies: StrategyData[] = strategiesData.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description || '',
+        market: s.market || 'Over 2.5',
+        unit_stake: s.unit_stake || 1,
+        min_odds: s.min_odds || 1,
+        max_odds: s.max_odds || 10,
+        start_date: s.start_date || '',
+        end_date: s.end_date || '',
+        leagues: s.leagues || [],
+        home_teams: s.home_teams || [],
+        away_teams: s.away_teams || [],
+        results: s.results
+      }));
+
+      setStrategies(transformedStrategies);
       setGameData(allGameData as GameDataType[]);
       
       // Transform ranking data to include season
@@ -130,7 +148,8 @@ export default function Backtesting() {
         end_date: strategyData.end_date || '',
         leagues: strategyData.leagues || [],
         home_teams: strategyData.home_teams || [],
-        away_teams: strategyData.away_teams || []
+        away_teams: strategyData.away_teams || [],
+        market: strategyData.market || 'Over 2.5'
       };
       
       const results = backtestingEngine.runBacktest(strategyWithDefaults, gameData, rankingHomeData, rankingAwayData);

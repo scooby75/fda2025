@@ -128,21 +128,15 @@ export default function Dashboard() {
     };
   };
 
-  const getBestStrategy = (): (StrategyData & { name: string | null }) | null => {
+  const getBestStrategy = (): StrategyData | null => {
     const strategiesWithResults = strategies.filter((s: StrategyData) => s.results?.roi);
     if (strategiesWithResults.length === 0) {
-      return {
-        results: { roi: 0, totalGames: 0, wins: 0, profit: 0 },
-        name: null,
-        id: 0,
-        market: '',
-        created_date: ''
-      } as StrategyData & { name: string | null };
+      return null;
     }
     
     return strategiesWithResults.reduce((best, current) => 
       (current.results?.roi || 0) > (best.results?.roi || 0) ? current : best
-    ) as StrategyData & { name: string | null };
+    );
   };
 
   const dateRangeStats = getDateRangeStats();
@@ -241,8 +235,8 @@ export default function Dashboard() {
           {/* Data Summary */}
           <div>
             <DataSummary 
-              gameDataCount={gameData.length}
-              strategiesCount={strategies.length}
+              totalGames={gameData.length}
+              totalStrategies={strategies.length}
               lastUpdated={new Date().toISOString()}
             />
           </div>
