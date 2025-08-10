@@ -1,116 +1,151 @@
-import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { User } from "@/entities/User";
-import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Settings, LogOut, BarChart3, Users, Menu } from "lucide-react";
 
-type LayoutProps = {
-  children: React.ReactNode;
-  currentPageName?: string;
-};
+import React from 'react';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { 
+  BarChart3, 
+  Target, 
+  Wallet, 
+  Calendar,
+  Settings,
+  LogOut,
+  User
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { createPageUrl } from '@/utils';
 
-export default function Layout({ children, currentPageName }: LayoutProps) {
-  const navigate = useNavigate();
-  const [user, setUser] = React.useState<any | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [collapsed, setCollapsed] = React.useState(false);
-
-  const styleVariables = React.useMemo(() => `
-    :root {
-      --background-rgb: 15, 23, 42;
-      --foreground-rgb: 255, 255, 255;
-      --muted-rgb: 100, 116, 139;
-      --primary-rgb: 34, 197, 94;
-    }
-  `, []);
+export default function Layout() {
+  const location = useLocation();
+  const [user, setUser] = React.useState(null);
 
   React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const currentUser = await User.me();
-        if (mounted) setUser(currentUser);
-      } catch {
-        if (mounted) setUser(null);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    })();
-    document.title = "Football Data Analysis";
-    return () => { mounted = false; };
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    await User.logout();
-    setUser(null);
-    navigate(createPageUrl("Landing"));
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
   };
 
   const navigationItems = [
-    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "Analytics", url: "/analytics", icon: BarChart3 },
-    { title: "Users", url: "/users", icon: Users, adminOnly: true },
-    { title: "Settings", url: "/settings", icon: Settings },
+    {
+      name: 'Dashboard',
+      href: createPageUrl('Dashboard'),
+      icon: BarChart3,
+    },
+    {
+      name: 'Backtesting',
+      href: createPageUrl('Backtesting'),
+      icon: Target,
+    },
+    {
+      name: 'Gestão de Banca',
+      href: createPageUrl('BankrollManagement'),
+      icon: Wallet,
+    },
+    {
+      name: 'Jogos do Dia',
+      href: createPageUrl('DailyGames'),
+      icon: Calendar,
+    },
   ];
 
-  if (!isLoading && !user) {
-    navigate(createPageUrl("Landing"));
-    return null;
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="max-w-md w-full space-y-8 p-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-bold text-foreground">
+              Sistema de Backtesting
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Faça login para acessar o sistema
+            </p>
+          </div>
+          <Button
+            onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
+            className="w-full"
+          >
+            Entrar com Google
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen flex bg-[rgb(var(--background-rgb))] text-white">
-      <style>{styleVariables}</style>
-      <aside className={`transition-all duration-200 bg-slate-900 p-4 ${collapsed ? 'w-16' : 'w-64'}`}>
-        <div className="flex items-center justify-between mb-6">
-          <div className="text-lg font-bold">FDA2025</div>
-          <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle menu">
-            <Menu className="w-5 h-5" />
-          </Button>
-        </div>
+    <div className="min-h-screen bg-background">
+      {/* Sidebar */}
+      <div className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border">
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center px-6 py-4 border-b border-border">
+            <Target className="w-8 h-8 text-primary mr-3" />
+            <h1 className="text-xl font-semibold text-card-foreground">
+              Backtesting
+            </h1>
+          </div>
 
-        <nav className="flex flex-col gap-1">
-          {navigationItems.map((item) => {
-            if (item.adminOnly && user?.role !== "admin") return null;
-            return (
-              <NavLink
-                key={item.title}
-                to={item.url}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 p-2 rounded-md ${isActive ? 'bg-emerald-600 text-black' : 'text-slate-300 hover:bg-slate-800'}`
-                }
-              >
-                <item.icon className="w-5 h-5" />
-                {!collapsed && <span className="truncate">{item.title}</span>}
-              </NavLink>
-            );
-          })}
-        </nav>
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {navigationItems.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5 mr-3" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
 
-        <div className="mt-auto pt-4">
-          {user && (
+          {/* User Info */}
+          <div className="px-4 py-4 border-t border-border">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-emerald-600 text-black flex items-center justify-center font-bold">
-                  {user?.full_name?.trim()?.charAt(0)?.toUpperCase() ?? "U"}
+              <div className="flex items-center">
+                <User className="w-8 h-8 text-muted-foreground mr-3" />
+                <div>
+                  <p className="text-sm font-medium text-card-foreground">
+                    {user.email}
+                  </p>
                 </div>
-                {!collapsed && <span className="truncate">{user.full_name}</span>}
               </div>
-              <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
-                <LogOut className="w-5 h-5" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="w-4 h-4" />
               </Button>
             </div>
-          )}
+          </div>
         </div>
-      </aside>
+      </div>
 
-      <main className="flex-1">
-        <div className="p-6">
-          {currentPageName && <h1 className="text-2xl font-bold mb-4">{currentPageName}</h1>}
-          {children}
-        </div>
-      </main>
+      {/* Main Content */}
+      <div className="pl-64">
+        <main>
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
