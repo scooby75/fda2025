@@ -23,13 +23,13 @@ import {
 import StrategyForm from "../Components/backtesting/strategyyform";
 import StrategyResults from "../Components/backtesting/strategyresults";
 import SavedStrategies from "../Components/backtesting/savedstrategies";
-import BacktestingEngine from "../components/backtesting/BacktestingEngine";
+import BacktestingEngine from "../src/components/backtesting/BacktestingEngine";
 import TelegramIntegration from "../Components/backtesting/telegramintegration";
 
 interface StrategyData {
-  id?: number;
+  id?: string;
   name: string;
-  description?: string;
+  description: string;
   market: string;
   season?: string | string[];
   min_ranking_home?: number;
@@ -69,6 +69,20 @@ interface RankingData {
   [key: string]: any;
 }
 
+interface FormData {
+  name: string;
+  description: string;
+  market: string;
+  unit_stake: number;
+  min_odds: number | null;
+  max_odds: number | null;
+  start_date: string;
+  end_date: string;
+  leagues: string[];
+  home_teams: string[];
+  away_teams: string[];
+}
+
 export default function Backtesting() {
   const [activeTab, setActiveTab] = useState("form");
   const [strategies, setStrategies] = useState<StrategyData[]>([]);
@@ -97,7 +111,7 @@ export default function Backtesting() {
 
       // Transform strategies data
       const transformedStrategies: StrategyData[] = strategiesData.map((s: any) => ({
-        id: s.id,
+        id: String(s.id || ''),
         name: s.name,
         description: s.description || '',
         market: s.market || 'Over 2.5',
@@ -134,25 +148,26 @@ export default function Backtesting() {
     setIsDataLoading(false);
   };
 
-  const handleRunBacktest = async (strategyData: StrategyData) => {
+  const handleRunBacktest = async (formData: FormData) => {
     setIsLoading(true);
 
     try {
       const backtestingEngine = new BacktestingEngine();
-      const strategyWithDefaults = {
-        ...strategyData,
-        unit_stake: strategyData.unit_stake || 1,
-        min_odds: strategyData.min_odds || 1,
-        max_odds: strategyData.max_odds || 10,
-        start_date: strategyData.start_date || '',
-        end_date: strategyData.end_date || '',
-        leagues: strategyData.leagues || [],
-        home_teams: strategyData.home_teams || [],
-        away_teams: strategyData.away_teams || [],
-        market: strategyData.market || 'Over 2.5'
+      const strategyData: StrategyData = {
+        ...formData,
+        description: formData.description || '',
+        min_odds: formData.min_odds || 1,
+        max_odds: formData.max_odds || 10,
+        market: formData.market || 'Over 2.5'
       };
       
-      const results = backtestingEngine.runBacktest(strategyWithDefaults, gameData, rankingHomeData, rankingAwayData);
+      const strategyForEngine = {
+        name: strategyData.name,
+        market: strategyData.market,
+        id: strategyData.id ? Number(strategyData.id) : undefined
+      };
+      
+      const results = backtestingEngine.runBacktest(strategyForEngine, gameData, rankingHomeData, rankingAwayData);
 
       setCurrentResults(results);
       setCurrentStrategy(strategyData);
@@ -166,14 +181,27 @@ export default function Backtesting() {
 
   const handleRunNewBacktest = (newStrategy: StrategyData) => {
     setCurrentStrategy(newStrategy);
-    handleRunBacktest(newStrategy);
+    const formData: FormData = {
+      name: newStrategy.name,
+      description: newStrategy.description,
+      market: newStrategy.market,
+      unit_stake: newStrategy.unit_stake,
+      min_odds: newStrategy.min_odds,
+      max_odds: newStrategy.max_odds,
+      start_date: newStrategy.start_date,
+      end_date: newStrategy.end_date,
+      leagues: newStrategy.leagues,
+      home_teams: newStrategy.home_teams,
+      away_teams: newStrategy.away_teams
+    };
+    handleRunBacktest(formData);
   };
 
-  const handleSaveStrategy = async (strategyData: StrategyData, results: any) => {
+  const handleSaveStrategy = async (strategy: StrategyData) => {
     try {
       const strategyToSave = {
-        ...strategyData,
-        results: results
+        ...strategy,
+        results: currentResults
       };
 
       await Strategy.create(strategyToSave);
@@ -190,8 +218,30 @@ export default function Backtesting() {
     setActiveTab("form");
   };
 
-  const handleStrategyChange = (updatedStrategy: StrategyData) => {
-    setCurrentStrategy(updatedStrategy);
+  const handleStrategyChange = (strategy: FormData) => {
+    const strategyData: StrategyData = {
+      ...strategy,
+      description: strategy.description || '',
+      min_odds: strategy.min_odds || 1,
+      max_odds: strategy.max_odds || 10
+    };
+    setCurrentStrategy(strategyData);
+  };
+
+  const convertStrategyToFormData = (strategy: StrategyData): FormData => {
+    return {
+      name: strategy.name,
+      description: strategy.description || '',
+      market: strategy.market,
+      unit_stake: strategy.unit_stake,
+      min_odds: strategy.min_odds,
+      max_odds: strategy.max_odds,
+      start_date: strategy.start_date,
+      end_date: strategy.end_date,
+      leagues: strategy.leagues,
+      home_teams: strategy.home_teams,
+      away_teams: strategy.away_teams
+    };
   };
 
   return (
@@ -268,7 +318,7 @@ export default function Backtesting() {
                     rankingAwayData={rankingAwayData}
                     onRunBacktest={handleRunBacktest}
                     isLoading={isLoading}
-                    initialStrategy={currentStrategy || undefined}
+                    initialStrategy={currentStrategy ? convertStrategyToFormData(currentStrategy) : undefined}
                     onStrategyChange={handleStrategyChange}
                   />
                 )}
@@ -282,7 +332,7 @@ export default function Backtesting() {
                 strategy={currentStrategy}
                 results={currentResults}
                 gameData={gameData}
-                onSaveStrategy={(strategy: StrategyData) => handleSaveStrategy(strategy, currentResults)}
+                onSaveStrategy={handleSaveStrategy}
                 onRunNewBacktest={() => currentStrategy && handleRunNewBacktest(currentStrategy)}
               />
             ) : (
@@ -308,8 +358,8 @@ export default function Backtesting() {
 
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
-              strategies={strategies}
-              onLoadStrategy={(strategy: StrategyData) => handleLoadStrategy(strategy)}
+              strategies={strategies.map(s => ({ ...s, id: s.id || '' }))}
+              onLoadStrategy={(strategy: any) => handleLoadStrategy(strategy as StrategyData)}
               onDeleteStrategy={async (id: string) => {
                 await Strategy.delete(parseInt(id));
                 loadData();
@@ -319,7 +369,7 @@ export default function Backtesting() {
 
           <TabsContent value="telegram" className="space-y-6">
             <TelegramIntegration 
-              strategies={strategies}
+              strategies={strategies.map(s => ({ ...s, id: s.id || '', market: s.market || 'Over 2.5' }))}
               gameData={gameData}
             />
           </TabsContent>

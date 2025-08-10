@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client'
-import type { Database } from '@/integrations/supabase/types'
+import type { Database } from '@/types/supabase'
 
 type BetTransactionRow = Database['public']['Tables']['bet_transaction']['Row']
 type BetTransactionInsert = Database['public']['Tables']['bet_transaction']['Insert']

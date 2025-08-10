@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client'
-import type { Database } from '@/integrations/supabase/types'
+import type { Database } from '@/types/supabase'
 
 type DailyGameRow = Database['public']['Tables']['dailygame']['Row']
 type DailyGameInsert = Database['public']['Tables']['dailygame']['Insert']
@@ -10,7 +10,7 @@ export class DailyGame {
     const { data, error } = await supabase
       .from('dailygame')
       .select('*')
-      .order('date')
+      .order('date', { ascending: false })
     
     if (error) throw error
     return data || []
@@ -27,14 +27,16 @@ export class DailyGame {
     return result
   }
 
-  static async bulkCreate(dataArray: DailyGameInsert[]): Promise<DailyGameRow[]> {
-    const { data, error } = await supabase
+  static async update(id: number, data: Partial<DailyGameInsert>): Promise<DailyGameRow> {
+    const { data: result, error } = await supabase
       .from('dailygame')
-      .insert(dataArray)
+      .update(data)
+      .eq('id', id)
       .select()
+      .single()
     
     if (error) throw error
-    return data || []
+    return result
   }
 
   static async delete(id: number): Promise<void> {
@@ -44,30 +46,5 @@ export class DailyGame {
       .eq('id', id)
     
     if (error) throw error
-  }
-
-  static schema() {
-    return {
-      properties: {
-        league: { type: 'string' },
-        date: { type: 'string' },
-        time: { type: 'string' },
-        rodada: { type: 'string' },
-        home: { type: 'string' },
-        away: { type: 'string' },
-        odd_h_ht: { type: 'number' },
-        odd_d_ht: { type: 'number' },
-        odd_a_ht: { type: 'number' },
-        odd_h_ft: { type: 'number' },
-        odd_d_ft: { type: 'number' },
-        odd_a_ft: { type: 'number' },
-        ppg_home: { type: 'number' },
-        ppg_away: { type: 'number' },
-        xg_home_pre: { type: 'number' },
-        xg_away_pre: { type: 'number' },
-        odd_btts_yes: { type: 'number' },
-        odd_btts_no: { type: 'number' }
-      }
-    }
   }
 }

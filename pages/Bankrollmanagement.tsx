@@ -104,7 +104,7 @@ export default function BankrollManagement() {
         market: t.market || '',
         stake: Number(t.stake),
         odds: Number(t.odds),
-        result: t.result === "void" ? "void" : t.result as "pending" | "win" | "loss" | "void",
+        result: t.result as "pending" | "win" | "loss" | "void",
         profit: t.profit || 0,
         description: t.description || '',
         tags: t.tags || [],
@@ -231,6 +231,9 @@ export default function BankrollManagement() {
           <TabsContent value="bankrolls" className="space-y-6">
             <BankrollList
               bankrolls={bankrolls}
+              onBankrollSelect={setSelectedBankroll}
+              onDataChange={loadData}
+              isLoading={isLoading}
             />
           </TabsContent>
 

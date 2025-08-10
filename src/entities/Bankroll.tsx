@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client'
-import type { Database } from '@/integrations/supabase/types'
+import type { Database } from '@/types/supabase'
 
 type BankrollRow = Database['public']['Tables']['bankroll']['Row']
 type BankrollInsert = Database['public']['Tables']['bankroll']['Insert']

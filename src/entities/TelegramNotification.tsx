@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client'
-import type { Database } from '@/integrations/supabase/types'
+import type { Database } from '@/types/supabase'
 
 type TelegramNotificationRow = Database['public']['Tables']['telegram_notification']['Row']
 type TelegramNotificationInsert = Database['public']['Tables']['telegram_notification']['Insert']
