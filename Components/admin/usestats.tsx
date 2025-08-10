@@ -1,8 +1,21 @@
+
 import React from 'react';
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Clock, CheckCircle, XCircle } from "lucide-react";
 
-export default function UserStats({ stats, isLoading }) {
+interface Stats {
+  total: number;
+  pending: number;
+  approved: number;
+  denied: number;
+}
+
+interface UserStatsProps {
+  stats: Stats;
+  isLoading: boolean;
+}
+
+export default function UserStats({ stats, isLoading }: UserStatsProps) {
   const statCards = [
     {
       title: "Total de Usuários",

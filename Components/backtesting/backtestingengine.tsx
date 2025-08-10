@@ -1,6 +1,153 @@
+interface Strategy {
+  season?: string | string[];
+  start_date?: string;
+  end_date?: string;
+  leagues?: string[];
+  home_teams?: string[];
+  away_teams?: string[];
+  min_game_week?: number;
+  max_game_week?: number;
+  min_home_ppg?: number;
+  max_home_ppg?: number;
+  min_away_ppg?: number;
+  max_away_ppg?: number;
+  min_home_xg?: number;
+  max_home_xg?: number;
+  min_away_xg?: number;
+  max_away_xg?: number;
+  min_shots_on_target_h?: number;
+  max_shots_on_target_h?: number;
+  min_shots_on_target_a?: number;
+  max_shots_on_target_a?: number;
+  min_shots_off_target_h?: number;
+  max_shots_off_target_h?: number;
+  min_shots_off_target_a?: number;
+  max_shots_off_target_a?: number;
+  min_goals_h_ht?: number;
+  max_goals_h_ht?: number;
+  min_goals_a_ht?: number;
+  max_goals_a_ht?: number;
+  min_goals_h_ft?: number;
+  max_goals_h_ft?: number;
+  min_goals_a_ft?: number;
+  max_goals_a_ft?: number;
+  min_ranking_home?: number;
+  max_ranking_home?: number;
+  min_ranking_away?: number;
+  max_ranking_away?: number;
+  market: string;
+  min_odds?: number;
+  max_odds?: number;
+  min_odds_ft_home_team_win?: number;
+  max_odds_ft_home_team_win?: number;
+  min_odds_ft_draw?: number;
+  max_odds_ft_draw?: number;
+  min_odds_ft_away_team_win?: number;
+  max_odds_ft_away_team_win?: number;
+  min_odds_h_ht?: number;
+  max_odds_h_ht?: number;
+  min_odds_d_ht?: number;
+  max_odds_d_ht?: number;
+  min_odds_a_ht?: number;
+  max_odds_a_ht?: number;
+  min_odds_ft_over15?: number;
+  max_odds_ft_over15?: number;
+  min_odds_ft_over25?: number;
+  max_odds_ft_over25?: number;
+  min_odds_ft_over35?: number;
+  max_odds_ft_over35?: number;
+  min_odds_ft_over45?: number;
+  max_odds_ft_over45?: number;
+  min_odds_btts_yes?: number;
+  max_odds_btts_yes?: number;
+  min_odds_btts_no?: number;
+  max_odds_btts_no?: number;
+  min_odds_under05_ft?: number;
+  max_odds_under05_ft?: number;
+  min_odds_under15_ft?: number;
+  max_odds_under15_ft?: number;
+  min_odds_under25_ft?: number;
+  max_odds_under25_ft?: number;
+  min_odds_under35_ft?: number;
+  max_odds_under35_ft?: number;
+  min_odds_under45_ft?: number;
+  max_odds_under45_ft?: number;
+  min_odds_dc_1x?: number;
+  max_odds_dc_1x?: number;
+  min_odds_dc_12?: number;
+  max_odds_dc_12?: number;
+  min_odds_dc_x2?: number;
+  max_odds_dc_x2?: number;
+  unit_stake: number;
+}
+
+interface GameData {
+  league: string;
+  season: number;
+  date: string;
+  rodada: number;
+  home: string;
+  away: string;
+  goals_h_ht?: number;
+  goals_a_ht?: number;
+  goals_h_ft?: number;
+  goals_a_ft?: number;
+  odd_h_ft?: number;
+  odd_d_ft?: number;
+  odd_a_ft?: number;
+  odd_h_ht?: number;
+  odd_d_ht?: number;
+  odd_a_ht?: number;
+  ppg_home_pre?: number;
+  ppg_away_pre?: number;
+  xg_home_pre?: number;
+  xg_away_pre?: number;
+  shotsontarget_h?: number;
+  shotsontarget_a?: number;
+  shotsofftarget_h?: number;
+  shotsofftarget_a?: number;
+  odd_over15_ft?: number;
+  odd_over25_ft?: number;
+  odd_over35_ft?: number;
+  odd_over45_ft?: number;
+  odd_under05_ft?: number;
+  odd_under15_ft?: number;
+  odd_under25_ft?: number;
+  odd_under35_ft?: number;
+  odd_under45_ft?: number;
+  odd_btts_yes?: number;
+  odd_btts_no?: number;
+  odd_dc_1x?: number;
+  odd_dc_12?: number;
+  odd_dc_x2?: number;
+}
+
+interface RankingHomeData {
+  league: string;
+  season: string;
+  home: string;
+  ranking_home: number;
+}
+
+interface RankingAwayData {
+  league: string;
+  season: string;
+  away: string;
+  ranking_away: number;
+}
+
+interface Bet {
+  game: GameData;
+  odds: number;
+  result: 'win' | 'loss' | 'undefined';
+  profit: number;
+  date: Date;
+  match: string;
+  score: string;
+}
 
 class BacktestingEngine {
-  runBacktest(strategy, gameData, rankingHomeData, rankingAwayData) {
+  runBacktest(strategy: Strategy, gameData: GameData[], rankingHomeData: RankingHomeData[], rankingAwayData: RankingAwayData[]) {
     // Ensure games are sorted by timestamp for chronological processing
     // Using new Date(a.date).getTime() for sorting based on the new 'date' field
     const sortedGameData = [...gameData].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -11,8 +158,8 @@ class BacktestingEngine {
     return results;
   }
 
-  filterGames(strategy, gameData, rankingHomeData, rankingAwayData) {
-    const isNum = (val) => typeof val === 'number';
+  filterGames(strategy: Strategy, gameData: GameData[], rankingHomeData: RankingHomeData[], rankingAwayData: RankingAwayData[]): GameData[] {
+    const isNum = (val: any): val is number => typeof val === 'number';
 
     // Create lookup maps for performance
     const homeRankingMap = new Map((rankingHomeData || []).map(r => [`${r.league}|${r.season}|${r.home}`, r]));
@@ -22,7 +169,7 @@ class BacktestingEngine {
       // Filtro por temporada - support both array and string
       if (strategy.season) {
         const seasonFilter = Array.isArray(strategy.season) ? strategy.season : [strategy.season];
-        if (seasonFilter.length > 0 && !seasonFilter.includes(game.season)) return false;
+        if (seasonFilter.length > 0 && !seasonFilter.includes(game.season.toString())) return false;
       }
 
       // Filtro por data
@@ -43,11 +190,11 @@ class BacktestingEngine {
       }
 
       // Filtro por ligas e times (update field names to lowercase)
-      if (strategy.leagues?.length > 0 && !strategy.leagues.includes(game.league)) return false;
-      if (strategy.home_teams?.length > 0 && !strategy.home_teams.includes(game.home)) return false;
-      if (strategy.away_teams?.length > 0 && !strategy.away_teams.includes(game.away)) return false;
+      if (strategy.leagues?.length && !strategy.leagues.includes(game.league)) return false;
+      if (strategy.home_teams?.length && !strategy.home_teams.includes(game.home)) return false;
+      if (strategy.away_teams?.length && !strategy.away_teams.includes(game.away)) return false;
 
-      const gameRodada = parseInt(game.rodada, 10);
+      const gameRodada = game.rodada;
 
       // Filtros numéricos com lógica robusta (update field names)
       if (isNum(strategy.min_game_week) && (!isNum(gameRodada) || gameRodada < strategy.min_game_week)) return false;
@@ -153,7 +300,7 @@ class BacktestingEngine {
     });
   }
 
-  generateBets(strategy, games) {
+  generateBets(strategy: Strategy, games: GameData[]): Bet[] {
     return games.map(game => {
       const betOdds = this.getOddsForMarket(strategy.market, game);
       const result = this.getBetResult(strategy.market, game);
@@ -172,7 +319,7 @@ class BacktestingEngine {
     });
   }
 
-  getOddsForMarket(market, game) {
+  getOddsForMarket(market: string, game: GameData): number {
     switch (market) {
       case "home_win":
         return game.odd_h_ft || 0;
@@ -209,7 +356,7 @@ class BacktestingEngine {
     }
   }
 
-  getBetResult(market, game) {
+  getBetResult(market: string, game: GameData): 'win' | 'loss' | 'undefined' {
     const homeGoalsFT = game.goals_h_ft;
     const awayGoalsFT = game.goals_a_ft;
     const homeGoalsHT = game.goals_h_ht;
@@ -223,15 +370,15 @@ class BacktestingEngine {
         if (ftMarkets.includes(market)) return "undefined";
     }
 
-    const totalGoalsFT = homeGoalsFT + awayGoalsFT;
+    const totalGoalsFT = (homeGoalsFT || 0) + (awayGoalsFT || 0);
 
     switch (market) {
       case "home_win":
-        return homeGoalsFT > awayGoalsFT ? "win" : "loss";
+        return (homeGoalsFT || 0) > (awayGoalsFT || 0) ? "win" : "loss";
       case "draw":
-        return homeGoalsFT === awayGoalsFT ? "win" : "loss";
+        return (homeGoalsFT || 0) === (awayGoalsFT || 0) ? "win" : "loss";
       case "away_win":
-        return awayGoalsFT > homeGoalsFT ? "win" : "loss";
+        return (awayGoalsFT || 0) > (homeGoalsFT || 0) ? "win" : "loss";
       case "home_win_ht":
          if (homeGoalsHT == null || awayGoalsHT == null) return "undefined";
          return homeGoalsHT > awayGoalsHT ? "win" : "loss";
@@ -250,21 +397,21 @@ class BacktestingEngine {
       case "under_25":
         return totalGoalsFT < 3 ? "win" : "loss";
       case "btts_yes":
-        return homeGoalsFT >= 1 && awayGoalsFT >= 1 ? "win" : "loss";
+        return (homeGoalsFT || 0) >= 1 && (awayGoalsFT || 0) >= 1 ? "win" : "loss";
       case "btts_no":
-        return homeGoalsFT < 1 || awayGoalsFT < 1 ? "win" : "loss"; 
+        return (homeGoalsFT || 0) < 1 || (awayGoalsFT || 0) < 1 ? "win" : "loss"; 
       case "dc_1x":
-        return homeGoalsFT >= awayGoalsFT ? "win" : "loss";
+        return (homeGoalsFT || 0) >= (awayGoalsFT || 0) ? "win" : "loss";
       case "dc_12":
-        return homeGoalsFT !== awayGoalsFT ? "win" : "loss";
+        return (homeGoalsFT || 0) !== (awayGoalsFT || 0) ? "win" : "loss";
       case "dc_x2":
-        return awayGoalsFT >= homeGoalsFT ? "win" : "loss";
+        return (awayGoalsFT || 0) >= (homeGoalsFT || 0) ? "win" : "loss";
       default:
         return "loss"; // Should not happen if market is valid
     }
   }
 
-  calculateBetProfit(result, odds, unitStake) {
+  calculateBetProfit(result: 'win' | 'loss' | 'undefined', odds: number, unitStake: number): number {
     if (result === "undefined") return 0; // No profit/loss if game result is unknown
     // If odds are not available or zero, consider it a loss of stake
     if (!odds || odds === 0) {
@@ -278,7 +425,7 @@ class BacktestingEngine {
     }
   }
 
-  calculateResults(bets, strategy) {
+  calculateResults(bets: Bet[], strategy: Strategy) {
     // Filter apostas com resultados indefinidos ou sem odds válidas (para o mercado primário) antes de calcular
     // The betOdds (primary market odds) are stored in bet.odds
     const validBets = bets.filter(bet => bet.result !== "undefined" && bet.odds && bet.odds > 0);
@@ -298,10 +445,10 @@ class BacktestingEngine {
 
     const streaks = this.calculateStreaks(validBets);
     const analyses = this.generateAnalyses(validBets);
-    const evolution = this.calculateEvolution(validBets, strategy.unit_stake); // Bets are already chronological
+    const evolution = this.calculateEvolution(validBets, strategy.unit_stake);
 
     // Sort for sample_bets (most recent first)
-    const recentSampleBets = [...validBets].sort((a, b) => b.date - a.date).slice(0, 20);
+    const recentSampleBets = [...validBets].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 20);
 
     return {
       total_bets: totalBets,
@@ -314,7 +461,7 @@ class BacktestingEngine {
       max_winning_streak_profit: streaks.maxWinningStreakProfit,
       max_losing_streak: streaks.maxLosingStreak,
       max_losing_streak_loss: streaks.maxLosingStreakLoss,
-      sample_bets: recentSampleBets, // Use the new recent sample
+      sample_bets: recentSampleBets,
       best_leagues: analyses.bestLeagues,
       worst_leagues: analyses.worstLeagues,
       best_teams: analyses.bestTeams,
@@ -324,7 +471,7 @@ class BacktestingEngine {
     };
   }
 
-  calculateStreaks(bets) {
+  calculateStreaks(bets: Bet[]) {
     let maxWinningStreak = 0;
     let maxWinningStreakProfit = 0;
     let maxLosingStreak = 0;
@@ -344,23 +491,21 @@ class BacktestingEngine {
         
         if (currentWinningStreak > maxWinningStreak) {
           maxWinningStreak = currentWinningStreak;
-          maxWinningStreakProfit = currentWinningStreakProfit; // Update profit when new max streak is found
+          maxWinningStreakProfit = currentWinningStreakProfit;
         } else if (currentWinningStreak === maxWinningStreak && currentWinningStreakProfit > maxWinningStreakProfit) {
-          maxWinningStreakProfit = currentWinningStreakProfit; // Update if same streak length but higher profit
+          maxWinningStreakProfit = currentWinningStreakProfit;
         }
-
-
-      } else { // loss
+      } else {
         currentLosingStreak++;
-        currentLosingStreakLoss += bet.profit; // Profit is negative for losses
+        currentLosingStreakLoss += bet.profit;
         currentWinningStreak = 0;
         currentWinningStreakProfit = 0;
         
         if (currentLosingStreak > maxLosingStreak) {
           maxLosingStreak = currentLosingStreak;
-          maxLosingStreakLoss = currentLosingStreakLoss; // Update loss when new max streak is found
+          maxLosingStreakLoss = currentLosingStreakLoss;
         } else if (currentLosingStreak === maxLosingStreak && currentLosingStreakLoss < maxLosingStreakLoss) {
-           maxLosingStreakLoss = currentLosingStreakLoss; // Update if same streak length but greater loss (loss is a more negative number)
+           maxLosingStreakLoss = currentLosingStreakLoss;
         }
       }
     });
@@ -373,15 +518,15 @@ class BacktestingEngine {
     };
   }
 
-  generateAnalyses(bets) {
-    const leagueStats = {};
-    const teamStats = {};
-    const scoreStats = {};
+  generateAnalyses(bets: Bet[]) {
+    const leagueStats: Record<string, {profit: number, bets: number}> = {};
+    const teamStats: Record<string, {profit: number, bets: number}> = {};
+    const scoreStats: Record<string, number> = {};
 
     bets.forEach(bet => {
-      const league = bet.game.league; // Use bet.game.league
-      const homeTeam = bet.game.home; // Use bet.game.home
-      const awayTeam = bet.game.away; // Use bet.game.away
+      const league = bet.game.league;
+      const homeTeam = bet.game.home;
+      const awayTeam = bet.game.away;
       const score = bet.score;
 
       if (league) {
@@ -404,29 +549,29 @@ class BacktestingEngine {
       }
     });
 
-    const calculateAvgProfit = (stats) => stats.bets > 0 ? stats.profit / stats.bets : 0;
+    const calculateAvgProfit = (stats: {profit: number, bets: number}) => stats.bets > 0 ? stats.profit / stats.bets : 0;
 
     const bestLeagues = Object.entries(leagueStats)
-      .filter(([,stats]) => stats.profit > 0) // Mostrar apenas ligas com lucro positivo
+      .filter(([,stats]) => stats.profit > 0)
       .sort(([,a], [,b]) => b.profit - a.profit)
       .slice(0, 10)
       .map(([name, stats]) => ({ name, ...stats, avgProfit: calculateAvgProfit(stats) }));
 
     const worstLeagues = Object.entries(leagueStats)
-      .filter(([,stats]) => stats.profit < 0) // Mostrar apenas ligas com prejuízo
-      .sort(([,a], [,b]) => a.profit - b.profit) // Ordenar pelo menor lucro (maior prejuízo)
+      .filter(([,stats]) => stats.profit < 0)
+      .sort(([,a], [,b]) => a.profit - b.profit)
       .slice(0, 10)
       .map(([name, stats]) => ({ name, ...stats, avgProfit: calculateAvgProfit(stats) }));
 
     const bestTeams = Object.entries(teamStats)
-      .filter(([,stats]) => stats.profit > 0) // Mostrar apenas times com lucro positivo
+      .filter(([,stats]) => stats.profit > 0)
       .sort(([,a], [,b]) => b.profit - a.profit)
       .slice(0, 10)
       .map(([name, stats]) => ({ name, ...stats, avgProfit: calculateAvgProfit(stats) }));
 
     const worstTeams = Object.entries(teamStats)
-      .filter(([,stats]) => stats.profit < 0) // Mostrar apenas times com prejuízo
-      .sort(([,a], [,b]) => a.profit - b.profit) // Ordenar pelo menor lucro (maior prejuízo)
+      .filter(([,stats]) => stats.profit < 0)
+      .sort(([,a], [,b]) => a.profit - b.profit)
       .slice(0, 10)
       .map(([name, stats]) => ({ name, ...stats, avgProfit: calculateAvgProfit(stats) }));
 
@@ -442,7 +587,7 @@ class BacktestingEngine {
     return { bestLeagues, worstLeagues, bestTeams, worstTeams, commonScores };
   }
 
-  calculateEvolution(bets, unitStake) {
+  calculateEvolution(bets: Bet[], unitStake: number) {
     let runningProfit = 0;
     return bets.map((bet, index) => {
       runningProfit += bet.profit;
@@ -450,7 +595,7 @@ class BacktestingEngine {
       return {
         bet: index + 1,
         profit: runningProfit,
-        roi: currentTotalStake > 0 ? ((runningProfit / currentTotalStake) * 100) : 0 // Return as number
+        roi: currentTotalStake > 0 ? ((runningProfit / currentTotalStake) * 100) : 0
       };
     });
   }

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Shield, Trash2 } from "lucide-react";
@@ -11,7 +12,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function UserActions({ user, onApprove, onDeny, onBlock, onDelete }) {
+interface User {
+  id: string;
+  full_name: string;
+  status: 'pending' | 'approved' | 'denied';
+}
+
+interface UserActionsProps {
+  user: User;
+  onApprove: (userId: string, plan: string) => void;
+  onDeny: (userId: string) => void;
+  onBlock: (userId: string) => void;
+  onDelete: (userId: string) => void;
+}
+
+export default function UserActions({ user, onApprove, onDeny, onBlock, onDelete }: UserActionsProps) {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('90_days');
 
