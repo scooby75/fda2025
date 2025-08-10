@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea }
-  from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import MultiSelect from "@/components/ui/MultiSelect";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,16 +27,65 @@ const MARKETS = [
   { value: "dc_x2", label: "Dupla Chance X2" }
 ];
 
-const initialFormData = {
+interface FormData {
+  name: string;
+  description: string;
+  market: string;
+  min_odds: number | null;
+  max_odds: number | null;
+  unit_stake: number;
+  start_date: string;
+  end_date: string;
+  season: string[];
+  leagues: string[];
+  home_teams: string[];
+  away_teams: string[];
+  [key: string]: any;
+}
+
+interface OptionType {
+  value: string;
+  label: string;
+}
+
+interface AvailableOptions {
+  leagues: OptionType[];
+  teams: OptionType[];
+  seasons: OptionType[];
+}
+
+interface GameData {
+  league: string;
+  home: string;
+  away: string;
+  [key: string]: any;
+}
+
+interface RankingData {
+  season: string;
+  [key: string]: any;
+}
+
+interface StrategyFormProps {
+  gameData: GameData[];
+  rankingHomeData: RankingData[];
+  rankingAwayData: RankingData[];
+  onRunBacktest: (formData: FormData) => void;
+  isLoading: boolean;
+  initialStrategy?: FormData;
+  onStrategyChange?: (strategy: FormData) => void;
+}
+
+const initialFormData: FormData = {
   name: "",
   description: "",
   market: "home_win",
-  min_odds: null, // Default to null for optional fields
+  min_odds: null,
   max_odds: null,
   unit_stake: 10,
   start_date: "",
   end_date: "",
-  season: [], // Changed from string to array for multi-select
+  season: [],
   leagues: [],
   home_teams: [],
   away_teams: [],
@@ -59,8 +107,6 @@ const initialFormData = {
   max_shots_off_target_h: null,
   min_shots_off_target_a: null,
   max_shots_off_target_a: null,
-
-  // Goal filters
   min_goals_h_ht: null,
   max_goals_h_ht: null,
   min_goals_a_ht: null,
@@ -69,22 +115,16 @@ const initialFormData = {
   max_goals_h_ft: null,
   min_goals_a_ft: null,
   max_goals_a_ft: null,
-
-  // Ranking Filters
   min_ranking_home: null,
   max_ranking_home: null,
   min_ranking_away: null,
   max_ranking_away: null,
-
-  // HT odds filters
   min_odds_h_ht: null,
   max_odds_h_ht: null,
   min_odds_d_ht: null,
   max_odds_d_ht: null,
   min_odds_a_ht: null,
   max_odds_a_ht: null,
-
-  // Specific odds filters
   min_odds_ft_home_team_win: null,
   max_odds_ft_home_team_win: null,
   min_odds_ft_draw: null,
@@ -113,7 +153,15 @@ const initialFormData = {
   max_odds_dc_x2: null,
 };
 
-const OddsFilterField = ({ label, minField, maxField, formData, handleInputChange }) => (
+interface OddsFilterFieldProps {
+  label: string;
+  minField: string;
+  maxField: string;
+  formData: FormData;
+  handleInputChange: (field: string, value: any) => void;
+}
+
+const OddsFilterField = ({ label, minField, maxField, formData, handleInputChange }: OddsFilterFieldProps) => (
   <>
     <div>
       <Label htmlFor={minField} className="text-muted-foreground text-xs">{label} Min</Label>
@@ -138,30 +186,26 @@ const OddsFilterField = ({ label, minField, maxField, formData, handleInputChang
   </>
 );
 
+export default function StrategyForm({ gameData, rankingHomeData, rankingAwayData, onRunBacktest, isLoading, initialStrategy, onStrategyChange }: StrategyFormProps) {
+  const [formData, setFormData] = useState<FormData>(initialStrategy || initialFormData);
 
-export default function StrategyForm({ gameData, rankingHomeData, rankingAwayData, onRunBacktest, isLoading, initialStrategy, onStrategyChange }) {
-  const [formData, setFormData] = useState(initialStrategy || initialFormData);
-
-  const [availableOptions, setAvailableOptions] = useState({
+  const [availableOptions, setAvailableOptions] = useState<AvailableOptions>({
     leagues: [],
     teams: [],
     seasons: [],
   });
 
   useEffect(() => {
-    const leagues = [...new Set((gameData || []).map(g => g.league))].filter(Boolean).sort().map(l => ({ value: l, label: l }));
-    const teams = [...new Set([...(gameData || []).map(g => g.home), ...(gameData || []).map(g => g.away)])].filter(Boolean).sort().map(t => ({ value: t, label: t }));
-    // Seasons should come from ranking data if available, as it implies historical coverage.
-    const seasons = [...new Set((rankingHomeData || []).map(r => r.season))].filter(Boolean).sort((a, b) => b.localeCompare(a)).map(s => ({ value: s, label: s }));
+    const leagues = [...new Set((gameData || []).map((g: GameData) => g.league))].filter(Boolean).sort().map((l: string) => ({ value: l, label: l }));
+    const teams = [...new Set([...(gameData || []).map((g: GameData) => g.home), ...(gameData || []).map((g: GameData) => g.away)])].filter(Boolean).sort().map((t: string) => ({ value: t, label: t }));
+    const seasons = [...new Set((rankingHomeData || []).map((r: RankingData) => r.season))].filter(Boolean).sort((a: string, b: string) => b.localeCompare(a)).map((s: string) => ({ value: s, label: s }));
 
     setAvailableOptions({ leagues, teams, seasons });
-  }, [gameData, rankingHomeData]); // Added rankingHomeData to dependencies
+  }, [gameData, rankingHomeData]);
 
   useEffect(() => {
     if (initialStrategy) {
-      // Merge initialStrategy with default values to ensure all fields are present
       const mergedStrategy = { ...initialFormData, ...initialStrategy };
-      // Ensure array fields are always arrays
       mergedStrategy.leagues = Array.isArray(mergedStrategy.leagues) ? mergedStrategy.leagues : [];
       mergedStrategy.home_teams = Array.isArray(mergedStrategy.home_teams) ? mergedStrategy.home_teams : [];
       mergedStrategy.away_teams = Array.isArray(mergedStrategy.away_teams) ? mergedStrategy.away_teams : [];
@@ -176,8 +220,8 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
     }
   }, [initialStrategy, onStrategyChange]);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => {
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev: FormData) => {
       const updatedFormData = {
         ...prev,
         [field]: value
@@ -189,8 +233,8 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
     });
   };
 
-  const handleMultiSelectChange = (field, selectedValues) => {
-    setFormData(prev => {
+  const handleMultiSelectChange = (field: string, selectedValues: string[]) => {
+    setFormData((prev: FormData) => {
       const updatedFormData = {
         ...prev,
         [field]: selectedValues
@@ -202,24 +246,31 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onRunBacktest(formData);
   };
 
-  const AdvancedFilterInput = ({ label, field, type = "number", step = "1", placeholder = "" }) => (
+  interface AdvancedFilterInputProps {
+    label: string;
+    field: string;
+    type?: string;
+    step?: string;
+    placeholder?: string;
+  }
+
+  const AdvancedFilterInput = ({ label, field, type = "number", step = "1", placeholder = "" }: AdvancedFilterInputProps) => (
     <div>
       <Label htmlFor={field} className="text-muted-foreground text-xs whitespace-nowrap">{label}</Label>
       <Input
         id={field} type={type} step={step}
         value={formData[field] === null ? '' : formData[field]}
-        onChange={(e) => handleInputChange(field, e.target.value === '' ? null : (type === "number" || type === "text" ? parseFloat(e.target.value) : parseInt(e.target.value)))} // Adjust parsing for numbers
+        onChange={(e) => handleInputChange(field, e.target.value === '' ? null : (type === "number" || type === "text" ? parseFloat(e.target.value) : parseInt(e.target.value)))}
         className="bg-input border-border text-foreground h-8 text-sm"
         placeholder={placeholder}
       />
     </div>
   );
-
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
@@ -246,7 +297,7 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
             </div>
             <div>
               <Label htmlFor="market" className="text-muted-foreground">Mercado Principal</Label>
-              <Select value={formData.market} onValueChange={(value) => handleInputChange('market', value)}>
+              <Select value={formData.market} onValueChange={(value: string) => handleInputChange('market', value)}>
                 <SelectTrigger className="bg-input border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
@@ -350,7 +401,7 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
               <MultiSelect
                 options={availableOptions.seasons}
                 selected={Array.isArray(formData.season) ? formData.season : (formData.season ? [formData.season] : [])}
-                onChange={(selected) => handleMultiSelectChange('season', selected)}
+                onChange={(selected: string[]) => handleMultiSelectChange('season', selected)}
                 placeholder="Selecione temporadas..."
               />
             </div>
@@ -372,7 +423,7 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
             <MultiSelect
               options={availableOptions.leagues}
               selected={formData.leagues}
-              onChange={(selected) => handleMultiSelectChange('leagues', selected)}
+              onChange={(selected: string[]) => handleMultiSelectChange('leagues', selected)}
               placeholder="Selecione as ligas..."
             />
           </div>
@@ -381,7 +432,7 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
             <MultiSelect
               options={availableOptions.teams}
               selected={formData.home_teams}
-              onChange={(selected) => handleMultiSelectChange('home_teams', selected)}
+              onChange={(selected: string[]) => handleMultiSelectChange('home_teams', selected)}
               placeholder="Selecione times mandantes..."
             />
           </div>
@@ -390,7 +441,7 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
             <MultiSelect
               options={availableOptions.teams}
               selected={formData.away_teams}
-              onChange={(selected) => handleMultiSelectChange('away_teams', selected)}
+              onChange={(selected: string[]) => handleMultiSelectChange('away_teams', selected)}
               placeholder="Selecione times visitantes..."
             />
           </div>
@@ -425,7 +476,6 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
         </CardContent>
       </Card>
 
-
       {/* Advanced Stat Filters */}
       <Card className="bg-card border-border">
         <CardHeader>
@@ -437,46 +487,32 @@ export default function StrategyForm({ gameData, rankingHomeData, rankingAwayDat
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-4 pt-4">
           <AdvancedFilterInput label="Rodada Min" field="min_game_week" placeholder="Ex: 1" type="number" step="1" />
           <AdvancedFilterInput label="Rodada Max" field="max_game_week" placeholder="Ex: 38" type="number" step="1" />
-
           <AdvancedFilterInput label="Ranking Casa Min" field="min_ranking_home" placeholder="Ex: 1" type="number" step="1" />
           <AdvancedFilterInput label="Ranking Casa Max" field="max_ranking_home" placeholder="Ex: 5" type="number" step="1" />
-
           <AdvancedFilterInput label="Ranking Fora Min" field="min_ranking_away" placeholder="Ex: 1" type="number" step="1" />
           <AdvancedFilterInput label="Ranking Fora Max" field="max_ranking_away" placeholder="Ex: 8" type="number" step="1" />
-
           <AdvancedFilterInput label="PPG Casa Min" field="min_home_ppg" type="number" step="0.1" placeholder="Ex: 1.0" />
           <AdvancedFilterInput label="PPG Casa Max" field="max_home_ppg" type="number" step="0.1" placeholder="Ex: 2.5" />
-
           <AdvancedFilterInput label="PPG Visitante Min" field="min_away_ppg" type="number" step="0.1" placeholder="Ex: 0.8" />
           <AdvancedFilterInput label="PPG Visitante Max" field="max_away_ppg" type="number" step="0.1" placeholder="Ex: 2.0" />
-
           <AdvancedFilterInput label="xG Casa Min" field="min_home_xg" type="number" step="0.1" placeholder="Ex: 1.2" />
           <AdvancedFilterInput label="xG Casa Max" field="max_home_xg" type="number" step="0.1" placeholder="Ex: 2.8" />
-
           <AdvancedFilterInput label="xG Visitante Min" field="min_away_xg" type="number" step="0.1" placeholder="Ex: 0.9" />
           <AdvancedFilterInput label="xG Visitante Max" field="max_away_xg" type="number" step="0.1" placeholder="Ex: 2.5" />
-
           <AdvancedFilterInput label="Chutes Alvo Casa Min" field="min_shots_on_target_h" type="number" step="1" placeholder="Ex: 3" />
           <AdvancedFilterInput label="Chutes Alvo Casa Max" field="max_shots_on_target_h" type="number" step="1" placeholder="Ex: 8" />
-
           <AdvancedFilterInput label="Chutes Alvo Fora Min" field="min_shots_on_target_a" type="number" step="1" placeholder="Ex: 2" />
           <AdvancedFilterInput label="Chutes Alvo Fora Max" field="max_shots_on_target_a" type="number" step="1" placeholder="Ex: 7" />
-
           <AdvancedFilterInput label="Chutes Fora Casa Min" field="min_shots_off_target_h" placeholder="Ex: 1" type="number" step="1" />
           <AdvancedFilterInput label="Chutes Fora Casa Max" field="max_shots_off_target_h" placeholder="Ex: 6" type="number" step="1" />
-
           <AdvancedFilterInput label="Chutes Fora Visit. Min" field="min_shots_off_target_a" placeholder="Ex: 0" type="number" step="1" />
           <AdvancedFilterInput label="Chutes Fora Visit. Max" field="max_shots_off_target_a" placeholder="Ex: 5" type="number" step="1" />
-
           <AdvancedFilterInput label="Gols Casa (HT) Min" field="min_goals_h_ht" placeholder="Ex: 0" type="number" step="1" />
           <AdvancedFilterInput label="Gols Casa (HT) Max" field="max_goals_h_ht" placeholder="Ex: 3" type="number" step="1" />
-
           <AdvancedFilterInput label="Gols Fora (HT) Min" field="min_goals_a_ht" placeholder="Ex: 0" type="number" step="1" />
           <AdvancedFilterInput label="Gols Fora (HT) Max" field="max_goals_a_ht" placeholder="Ex: 4" type="number" step="1" />
-
           <AdvancedFilterInput label="Gols Casa (FT) Min" field="min_goals_h_ft" placeholder="Ex: 1" type="number" step="1" />
           <AdvancedFilterInput label="Gols Casa (FT) Max" field="max_goals_h_ft" placeholder="Ex: 5" type="number" step="1" />
-
           <AdvancedFilterInput label="Gols Fora (FT) Min" field="min_goals_a_ft" placeholder="Ex: 0" type="number" step="1" />
           <AdvancedFilterInput label="Gols Fora (FT) Max" field="max_goals_a_ft" placeholder="Ex: 4" type="number" step="1" />
         </CardContent>

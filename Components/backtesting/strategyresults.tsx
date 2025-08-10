@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,16 +19,71 @@ import {
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
-import BacktestingEngine from "./BacktestingEngine";
+import BacktestingEngine from "@/components/backtesting/BacktestingEngine";
 
-export default function StrategyResults({ strategy, results, onSaveStrategy, gameData, onRunNewBacktest }) {
-  const [selectedLeagues, setSelectedLeagues] = useState([]);
+interface Game {
+  goals_h_ft: number;
+  goals_a_ft: number;
+  goals_h_ht: number;
+  goals_a_ht: number;
+  [key: string]: any;
+}
+
+interface Bet {
+  result: string;
+  profit: number;
+}
+
+interface Strategy {
+  name: string;
+  unit_stake: number;
+  [key: string]: any;
+}
+
+interface Results {
+  total_bets: number;
+  hit_rate: number;
+  total_profit: number;
+  roi: number;
+  max_winning_streak: number;
+  max_winning_streak_profit: number;
+  max_losing_streak: number;
+  max_losing_streak_loss: number;
+  winning_bets: number;
+  average_odds: number;
+  evolution_chart: Array<{ bet: number; profit: number }>;
+  sample_bets: Array<{
+    date: Date;
+    match: string;
+    score: string;
+    odds: number;
+    result: string;
+    profit: number;
+    game?: Game;
+  }>;
+  best_leagues: Array<{ name: string; profit: number }>;
+  worst_leagues: Array<{ name: string; profit: number }>;
+  best_teams: Array<{ name: string; profit: number }>;
+  worst_teams: Array<{ name: string; profit: number }>;
+  common_scores: Array<{ score: string; count: number; percentage: string }>;
+}
+
+interface StrategyResultsProps {
+  strategy: Strategy;
+  results: Results;
+  onSaveStrategy: (strategy: Strategy, results: Results) => void;
+  gameData: Game[];
+  onRunNewBacktest: (strategy: Strategy) => void;
+}
+
+export default function StrategyResults({ strategy, results, onSaveStrategy, gameData, onRunNewBacktest }: StrategyResultsProps) {
+  const [selectedLeagues, setSelectedLeagues] = useState<string[]>([]);
 
   const handleSave = () => {
     onSaveStrategy(strategy, results);
   };
 
-  const handleLeagueToggle = (leagueName, checked) => {
+  const handleLeagueToggle = (leagueName: string, checked: boolean) => {
     if (checked) {
       setSelectedLeagues(prev => [...prev, leagueName]);
     } else {
@@ -53,7 +107,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
   };
 
   // Helper function to get bet result for a specific market
-  const getBetResultForMarket = (market, game) => {
+  const getBetResultForMarket = (market: string, game: Game): string => {
     const homeGoals = game.goals_h_ft;
     const awayGoals = game.goals_a_ft;
     const homeGoalsHT = game.goals_h_ht;
@@ -111,13 +165,13 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
   };
 
   // Calculate streaks for a specific market
-  const calculateStreaksForMarket = (bets) => {
+  const calculateStreaksForMarket = (bets: Bet[]) => {
     let maxWinningStreak = 0;
     let maxLosingStreak = 0;
     let currentWinningStreak = 0;
     let currentLosingStreak = 0;
 
-    bets.forEach(bet => {
+    bets.forEach((bet: Bet) => {
       if (bet.result === "win") {
         currentWinningStreak++;
         currentLosingStreak = 0;
@@ -165,9 +219,9 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
       let totalProfit = 0;
       let totalBets = 0;
       let wins = 0;
-      const bets = [];
+      const bets: Bet[] = [];
 
-      filteredGameData.forEach(game => {
+      filteredGameData.forEach((game: Game) => {
         const odds = game[market.oddField];
         if (!odds || odds === 0) return;
 
@@ -421,7 +475,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {results.sample_bets.map((bet, index) => (
+                {results.sample_bets.map((bet: any, index: number) => (
                   <TableRow key={index} className="border-slate-700">
                     <TableCell className="text-slate-300">
                       {format(bet.date, 'dd/MM/yyyy')}
@@ -484,13 +538,13 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
             </CardHeader>
             <CardContent className="p-4">
               <div className="space-y-2">
-                {results.best_leagues.slice(0, 10).map((league, index) => (
+                {results.best_leagues.slice(0, 10).map((league: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-slate-700/30 rounded hover:bg-slate-700/50 transition-colors">
                     <div className="flex items-center space-x-3">
                       <Checkbox
                         id={`league-${index}`}
                         checked={selectedLeagues.includes(league.name)}
-                        onCheckedChange={(checked) => handleLeagueToggle(league.name, checked)}
+                        onCheckedChange={(checked: boolean) => handleLeagueToggle(league.name, checked)}
                       />
                       <label 
                         htmlFor={`league-${index}`}
@@ -523,7 +577,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
             <CardContent className="p-4">
               {results.worst_leagues.length > 0 ? (
                 <div className="space-y-2">
-                  {results.worst_leagues.slice(0, 10).map((league, index) => (
+                  {results.worst_leagues.slice(0, 10).map((league: any, index: number) => (
                     <div key={index} className="flex justify-between items-center p-2 bg-slate-700/30 rounded">
                       <span className="text-white text-sm">{league.name}</span>
                       <span className="font-medium" style={{ color: 'rgb(239, 68, 68)' }}>${league.profit.toFixed(2)}</span>
@@ -547,7 +601,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
             </CardHeader>
             <CardContent className="p-4">
               <div className="space-y-2">
-                {results.best_teams.slice(0, 10).map((team, index) => (
+                {results.best_teams.slice(0, 10).map((team: any, index: number) => (
                   <div key={index} className="flex justify-between items-center p-2 bg-slate-700/30 rounded">
                     <span className="text-white text-sm">{team.name}</span>
                     <span className="font-medium" style={{ color: 'rgb(16, 185, 129)' }}>${team.profit.toFixed(2)}</span>
@@ -564,7 +618,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
             <CardContent className="p-4">
               {results.worst_teams.length > 0 ? (
                 <div className="space-y-2">
-                  {results.worst_teams.slice(0, 10).map((team, index) => (
+                  {results.worst_teams.slice(0, 10).map((team: any, index: number) => (
                     <div key={index} className="flex justify-between items-center p-2 bg-slate-700/30 rounded">
                       <span className="text-white text-sm">{team.name}</span>
                       <span className="font-medium" style={{ color: 'rgb(239, 68, 68)' }}>${team.profit.toFixed(2)}</span>
@@ -585,7 +639,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
             </CardHeader>
             <CardContent className="p-4">
               <div className="space-y-2">
-                {results.common_scores.map((score, index) => (
+                {results.common_scores.map((score: any, index: number) => (
                   <div key={index} className="flex justify-between items-center p-2 bg-slate-700/30 rounded">
                     <span className="text-white font-medium">{score.score}</span>
                     <div className="text-right">

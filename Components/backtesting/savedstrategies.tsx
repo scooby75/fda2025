@@ -15,10 +15,32 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export default function SavedStrategies({ strategies, onLoadStrategy, onDeleteStrategy }) {
-  const [deleteDialog, setDeleteDialog] = React.useState({ open: false, strategy: null });
+interface StrategyResult {
+  roi: number;
+  total_bets: number;
+  hit_rate: number;
+  total_profit: number;
+}
 
-  const handleDeleteClick = (strategy) => {
+interface Strategy {
+  id: string;
+  name: string;
+  market: string;
+  description?: string;
+  created_date: string;
+  results?: StrategyResult;
+}
+
+interface SavedStrategiesProps {
+  strategies: Strategy[];
+  onLoadStrategy: (strategy: Strategy) => void;
+  onDeleteStrategy: (id: string) => void;
+}
+
+export default function SavedStrategies({ strategies, onLoadStrategy, onDeleteStrategy }: SavedStrategiesProps) {
+  const [deleteDialog, setDeleteDialog] = React.useState<{ open: boolean; strategy: Strategy | null }>({ open: false, strategy: null });
+
+  const handleDeleteClick = (strategy: Strategy) => {
     setDeleteDialog({ open: true, strategy });
   };
 
@@ -58,7 +80,7 @@ export default function SavedStrategies({ strategies, onLoadStrategy, onDeleteSt
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {strategies.map((strategy) => (
+          {strategies.map((strategy: Strategy) => (
             <Card key={strategy.id} className="bg-card border-border hover:bg-muted/20 transition-all duration-300">
               <CardHeader className="border-b border-border">
                 <div className="flex justify-between items-start">
