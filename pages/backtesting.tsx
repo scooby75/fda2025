@@ -29,13 +29,22 @@ import TelegramIntegration from "../Components/backtesting/telegramintegration";
 interface StrategyData {
   id?: number;
   name: string;
-  market: string;
+  market?: string;
   season?: string | string[];
   min_ranking_home?: number;
   max_ranking_home?: number;
   min_ranking_away?: number;
   max_ranking_away?: number;
   created_date?: string;
+  unit_stake?: number;
+  min_odds?: number;
+  max_odds?: number;
+  start_date?: string;
+  end_date?: string;
+  leagues?: string[];
+  home_teams?: string[];
+  away_teams?: string[];
+  results?: any;
   [key: string]: any;
 }
 
@@ -112,7 +121,19 @@ export default function Backtesting() {
 
     try {
       const backtestingEngine = new BacktestingEngine();
-      const results = backtestingEngine.runBacktest(strategyData, gameData, rankingHomeData, rankingAwayData);
+      const strategyWithDefaults = {
+        ...strategyData,
+        unit_stake: strategyData.unit_stake || 1,
+        min_odds: strategyData.min_odds || 1,
+        max_odds: strategyData.max_odds || 10,
+        start_date: strategyData.start_date || '',
+        end_date: strategyData.end_date || '',
+        leagues: strategyData.leagues || [],
+        home_teams: strategyData.home_teams || [],
+        away_teams: strategyData.away_teams || []
+      };
+      
+      const results = backtestingEngine.runBacktest(strategyWithDefaults, gameData, rankingHomeData, rankingAwayData);
 
       setCurrentResults(results);
       setCurrentStrategy(strategyData);
@@ -228,7 +249,7 @@ export default function Backtesting() {
                     rankingAwayData={rankingAwayData}
                     onRunBacktest={handleRunBacktest}
                     isLoading={isLoading}
-                    initialStrategy={currentStrategy}
+                    initialStrategy={currentStrategy || undefined}
                     onStrategyChange={handleStrategyChange}
                   />
                 )}
@@ -242,8 +263,8 @@ export default function Backtesting() {
                 strategy={currentStrategy}
                 results={currentResults}
                 gameData={gameData}
-                onSaveStrategy={() => handleSaveStrategy(currentStrategy, currentResults)}
-                onRunNewBacktest={() => handleRunNewBacktest(currentStrategy)}
+                onSaveStrategy={(strategy: StrategyData) => handleSaveStrategy(strategy, currentResults)}
+                onRunNewBacktest={() => currentStrategy && handleRunNewBacktest(currentStrategy)}
               />
             ) : (
               <Card className="bg-card border-border">
@@ -268,10 +289,10 @@ export default function Backtesting() {
 
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
-              strategies={strategies as any}
-              onLoadStrategy={handleLoadStrategy}
-              onDeleteStrategy={async (strategyId: string) => {
-                await Strategy.delete(parseInt(strategyId));
+              strategies={strategies}
+              onLoadStrategy={(strategy: StrategyData) => handleLoadStrategy(strategy)}
+              onDeleteStrategy={async (id: string) => {
+                await Strategy.delete(parseInt(id));
                 loadData();
               }}
             />

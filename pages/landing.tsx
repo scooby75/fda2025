@@ -1,380 +1,410 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { User } from "@/entities/User";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User } from "@/entities/User";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Badge } from "@/components/ui/badge";
 import {
   BarChart3,
-  TrendingUp,
-  Shield,
-  Database,
-  CheckCircle,
-  ArrowRight,
   Target,
-  PieChart,
-  Activity,
-  MessageCircle // Added for Telegram contact
+  TrendingUp,
+  Users,
+  Shield,
+  Star,
+  Check,
+  ArrowRight,
+  Zap,
+  Database,
+  Calendar,
+  Activity
 } from "lucide-react";
 
-const PricingCard = ({ title, price, originalPrice, discount, duration, features, isPopular, stripeLink }) => (
-  <div className={`relative bg-slate-800 rounded-2xl shadow-xl border ${
-    isPopular ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-700'
-  } overflow-hidden transform hover:scale-105 transition-all duration-300`}>
-    {isPopular && (
-      <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-emerald-500 to-blue-600 text-white text-center py-2 text-sm font-semibold">
-        Mais Popular
-      </div>
-    )}
-    <div className={`p-8 ${isPopular ? 'pt-16' : ''}`}>
-      <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
-      <div className="mb-4">
-        <div className="flex items-baseline gap-2">
-          <span className="text-4xl font-bold text-emerald-400">R$ {price}</span>
-          {originalPrice && (
-            <span className="text-lg text-slate-400 line-through">R$ {originalPrice}</span>
-          )}
+interface PricingCardProps {
+  title: string;
+  price: string;
+  originalPrice?: string;
+  discount?: string;
+  duration: string;
+  features: string[];
+  isPopular?: boolean;
+  stripeLink: string;
+}
+
+const PricingCard: React.FC<PricingCardProps> = ({ 
+  title, 
+  price, 
+  originalPrice, 
+  discount, 
+  duration, 
+  features, 
+  isPopular, 
+  stripeLink 
+}) => {
+  return (
+    <Card className={`relative bg-card border-border ${isPopular ? 'ring-2 ring-primary' : ''}`}>
+      {isPopular && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+          <Badge className="bg-primary text-primary-foreground px-3 py-1">
+            Mais Popular
+          </Badge>
         </div>
-        <p className="text-slate-400 text-sm">{duration}</p>
-        {discount && (
-          <div className="mt-2">
-            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-              {discount}
-            </Badge>
-          </div>
-        )}
+      )}
+      
+      <CardHeader className="text-center p-6">
+        <CardTitle className="text-xl text-card-foreground mb-2">{title}</CardTitle>
+        <div className="space-y-2">
+          {originalPrice && (
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-sm text-muted-foreground line-through">{originalPrice}</span>
+              {discount && <Badge variant="destructive" className="text-xs">{discount}</Badge>}
+            </div>
+          )}
+          <div className="text-3xl font-bold text-primary">{price}</div>
+          <div className="text-sm text-muted-foreground">{duration}</div>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-6 pt-0">
+        <ul className="space-y-3 mb-6">
+          {features.map((feature: string, index: number) => (
+            <li key={index} className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-400" />
+              <span className="text-card-foreground text-sm">{feature}</span>
+            </li>
+          ))}
+        </ul>
+        
+        <a href={stripeLink} className="block w-full">
+          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+            Escolher Plano
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </a>
+      </CardContent>
+    </Card>
+  );
+};
+
+interface FeatureCardProps {
+  Icon: React.ComponentType<any>;
+  title: string;
+  description: string;
+}
+
+const FeatureCard: React.FC<FeatureCardProps> = ({ Icon, title, description }) => (
+  <Card className="bg-card border-border">
+    <CardContent className="p-6">
+      <div className="flex items-center gap-3 mb-3">
+        <Icon className="w-6 h-6 text-primary" />
+        <h3 className="text-lg font-semibold text-card-foreground">{title}</h3>
       </div>
-      <ul className="space-y-3 mb-8">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-center text-slate-300">
-            <CheckCircle className="w-4 h-4 text-emerald-400 mr-3 flex-shrink-0" />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <a href={stripeLink} target="_blank" rel="noopener noreferrer" className="block">
-        <Button 
-          className={`w-full py-3 font-semibold ${
-            isPopular 
-              ? 'bg-emerald-500 hover:bg-emerald-600 text-slate-900' 
-              : 'bg-slate-700 hover:bg-slate-600 text-white'
-          }`}
-        >
-          Assinar Agora
-        </Button>
-      </a>
-    </div>
-  </div>
+      <p className="text-muted-foreground">{description}</p>
+    </CardContent>
+  </Card>
 );
 
-const FeatureCard = ({ icon: Icon, title, description }) => (
-  <div className="bg-slate-800 p-6 rounded-lg shadow-lg flex flex-col items-start text-left h-full">
-    <div className="p-3 bg-emerald-500/20 rounded-md mb-4">
-      <Icon className="w-7 h-7 text-emerald-400" />
-    </div>
-    <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
-    <p className="text-slate-400 text-sm leading-relaxed">{description}</p>
-  </div>
+const TestimonialCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Card className="bg-card border-border">
+    <CardContent className="p-6">
+      {children}
+    </CardContent>
+  </Card>
 );
 
-const BulletPoint = ({ children }) => (
-  <li className="flex items-start">
-    <CheckCircle className="w-5 h-5 text-emerald-400 mr-3 mt-1 flex-shrink-0" />
-    <span className="text-slate-300">{children}</span>
-  </li>
-);
+export default function Landing() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-export default function LandingPage() {
-  const [user, setUser] = React.useState(null);
-  const [isLoadingLogin, setIsLoadingLogin] = React.useState(false);
-
-  React.useEffect(() => {
+  useEffect(() => {
     checkUser();
   }, []);
 
   const checkUser = async () => {
     try {
-      const currentUser = await User.me();
-      setUser(currentUser);
+      const user = await User.me();
+      setCurrentUser(user);
     } catch (error) {
-      setUser(null);
+      console.log("User not logged in");
     }
+    setIsLoading(false);
   };
 
-  const handleLogin = async () => {
-    setIsLoadingLogin(true);
-    try {
-      await User.login();
-      // Login will redirect, so no need to setIsLoadingLogin(false) here unless error handling changes
-    } catch (error) {
-      console.error("Erro no login:", error);
-      setIsLoadingLogin(false);
-    }
-  };
-  
-  const pricingPlans = [
-    {
-      title: "Plano Trimestral",
-      price: "99,90",
-      duration: "3 meses",
-      stripeLink: "https://buy.stripe.com/cNibJ03X11oG3Ga9HoeZ200",
-      features: [
-        "Acesso completo ao sistema",
-        "Backtesting ilimitado",
-        "Análises detalhadas",
-        "Suporte por email"
-      ]
-    },
-    {
-      title: "Plano Semestral",
-      price: "169,90",
-      originalPrice: "199,80",
-      discount: "Economize 15%",
-      duration: "6 meses",
-      isPopular: true,
-      stripeLink: "https://buy.stripe.com/00waEW6599Vc7Wq9HoeZ201",
-      features: [
-        "Acesso completo ao sistema",
-        "Backtesting ilimitado",
-        "Análises detalhadas",
-        "Suporte pelo Telegram",
-        "Relatórios avançados"
-      ]
-    },
-    {
-      title: "Plano Anual",
-      price: "299,90",
-      originalPrice: "399,60",
-      discount: "Economize 25%",
-      duration: "12 meses",
-      stripeLink: "https://buy.stripe.com/4gMdR83X16J00tY9HoeZ202",
-      features: [
-        "Acesso completo ao sistema",
-        "Backtesting ilimitado",
-        "Análises detalhadas",
-        "Suporte prioritário Telegram",
-        "Relatórios avançados",
-        "Acesso antecipado a novas features"
-      ]
-    }
-  ];
-
-  // Logged-in and approved user view
-  if (user && user.status === 'approved') {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6">
-        <div className="text-center max-w-2xl">
-          <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
-            <BarChart3 className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            Bem-vindo de volta, {user.full_name}!
-          </h1>
-          <p className="text-xl text-slate-300 mb-10">
-            Continue sua jornada de análise e otimização de estratégias de futebol.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to={createPageUrl("Dashboard")}>
-              <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-semibold px-8 py-3 w-full sm:w-auto">
-                <BarChart3 className="w-5 h-5 mr-2" />
-                Acessar Dashboard
-              </Button>
-            </Link>
-            <Link to={createPageUrl("Backtesting")}>
-              <Button size="lg" variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-emerald-400 w-full sm:w-auto">
-                <TrendingUp className="w-5 h-5 mr-2" />
-                Novo Backtesting
-              </Button>
-            </Link>
-          </div>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-
-  // Public landing page view
-  return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      {/* Floating Telegram Contact */}
-      <a
-        href="https://t.me/Lyssandro"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
-      >
-        <MessageCircle className="w-6 h-6" />
-      </a>
-
-      {/* Header */}
-      <header className="container mx-auto px-6 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold">Football Data Analysis</span>
-          </div>
-          <Button
-            onClick={handleLogin}
-            disabled={isLoadingLogin}
-            variant="outline"
-            className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-emerald-400 font-semibold"
-          >
-            {isLoadingLogin ? "Entrando..." : "Fazer Login"}
-          </Button>
+  // If user is logged in, show different content based on status
+  if (currentUser) {
+    const userStatus = currentUser.status || 'pending';
+    
+    if (userStatus === 'approved') {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Card className="bg-card border-border max-w-md w-full mx-4">
+            <CardContent className="p-8 text-center">
+              <Check className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-card-foreground mb-2">
+                Bem-vindo, {currentUser.full_name || currentUser.email}!
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                Sua conta foi aprovada. Acesse o dashboard para começar a usar a plataforma.
+              </p>
+              <Link to={createPageUrl("Dashboard")}>
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  Acessar Dashboard
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
-      </header>
+      );
+    }
 
-      {/* Hero Section */}
-      <section className="py-20 md:py-32">
-        <div className="container mx-auto px-6 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Plataforma Profissional de <br />
-            <span className="bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent">
-              Backtesting de Futebol
-            </span>
-          </h1>
-          <p className="text-lg md:text-xl text-slate-300 mb-12 max-w-3xl mx-auto">
-            Analise suas estratégias de apostas esportivas com dados reais, estatísticas avançadas
-            e insights profissionais para maximizar seus resultados.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="bg-card border-border max-w-md w-full mx-4">
+          <CardContent className="p-8 text-center">
+            <Shield className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-card-foreground mb-2">
+              Conta em Análise
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              Obrigado por se inscrever! Sua conta está sendo analisada e você receberá um email quando for aprovada.
+            </p>
             <Button
-              onClick={handleLogin}
-              disabled={isLoadingLogin}
-              size="lg"
-              className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-semibold px-10 py-3 text-lg"
-            >
-              {isLoadingLogin ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-900 mr-2"></div>
-              ) : null}
-              Começar Análise
-            </Button>
-            <Button
-              size="lg"
+              onClick={() => User.logout?.()}
               variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-emerald-400 font-semibold px-10 py-3 text-lg"
+              className="w-full border-border text-foreground hover:bg-muted/20"
             >
-              <PieChart className="w-5 h-5 mr-2" />
+              Fazer Logout
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Landing page for non-logged users
+  const pricingPlans = [
+    {
+      title: "Plano Mensal",
+      price: "R$ 37",
+      duration: "por mês",
+      stripeLink: "https://buy.stripe.com/test_6oE9Ar2bP8Tu7zW8ww",
+      features: [
+        "Acesso completo ao sistema",
+        "Backtesting ilimitado",
+        "Análise H2H avançada",
+        "Gestão de bankroll",
+        "Upload de dados",
+        "Suporte por email"
+      ]
+    },
+    {
+      title: "Plano Trimestral",
+      price: "R$ 97",
+      originalPrice: "R$ 111",
+      discount: "-13%",
+      duration: "por 3 meses",
+      stripeLink: "https://buy.stripe.com/test_5kA4gX09Hbq1dfO3cd",
+      isPopular: true,
+      features: [
+        "Acesso completo ao sistema",
+        "Backtesting ilimitado",
+        "Análise H2H avançada",
+        "Gestão de bankroll",
+        "Upload de dados",
+        "Suporte prioritário",
+        "2 semanas grátis"
+      ]
+    },
+    {
+      title: "Plano Anual",
+      price: "R$ 297",
+      originalPrice: "R$ 444",
+      discount: "-33%",
+      duration: "por 12 meses",
+      stripeLink: "https://buy.stripe.com/test_eVa5kV09HgQCebKaEF",
+      features: [
+        "Acesso completo ao sistema",
+        "Backtesting ilimitado",
+        "Análise H2H avançada",
+        "Gestão de bankroll",
+        "Upload de dados",
+        "Suporte prioritário",
+        "4 meses grátis",
+        "Consultoria estratégica"
+      ]
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Hero Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+            Análise Profissional de
+            <span className="text-primary"> Apostas Esportivas</span>
+          </h1>
+          <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Transforme seus dados em estratégias vencedoras com nossa plataforma completa 
+            de backtesting, análise H2H e gestão de bankroll.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+              Começar Agora
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+            <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted/20">
               Ver Demonstração
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Feature Cards Section */}
-      <section className="py-16 bg-slate-800/30">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+      {/* Features Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/20">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-foreground mb-12">
+            Funcionalidades Principais
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard
-              icon={Database}
-              title="Dados Reais"
-              description="Base de dados completa com milhares de jogos do futebol brasileiro e internacional."
+              Icon={BarChart3}
+              title="Sistema de Backtesting"
+              description="Teste suas estratégias com dados históricos e obtenha métricas detalhadas de performance."
             />
             <FeatureCard
-              icon={BarChart3}
-              title="Análise Avançada"
-              description="Estatísticas detalhadas por liga, time, placar e evolução temporal das estratégias."
+              Icon={Users}
+              title="Análise Head-to-Head"
+              description="Analise confrontos diretos entre equipes com estatísticas avançadas e padrões históricos."
             />
             <FeatureCard
-              icon={TrendingUp}
-              title="ROI Otimizado"
-              description="Identifique as estratégias mais lucrativas e minimize riscos com dados precisos."
+              Icon={Target}
+              title="Gestão de Bankroll"
+              description="Gerencie suas bancas de forma profissional com controle de apostas e relatórios detalhados."
             />
             <FeatureCard
-              icon={Shield}
-              title="Gestão de Risco"
-              description="Analise sequências de vitórias e derrotas para otimizar seu bankroll."
+              Icon={Database}
+              title="Upload de Dados"
+              description="Importe seus próprios dados de jogos, rankings e estatísticas de forma simples."
+            />
+            <FeatureCard
+              Icon={Activity}
+              title="Dashboard Avançado"
+              description="Visualize todas suas métricas e performance em um painel intuitivo e completo."
+            />
+            <FeatureCard
+              Icon={Calendar}
+              title="Jogos Diários"
+              description="Acesse informações sobre jogos do dia com odds e estatísticas atualizadas."
             />
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 md:py-28 bg-slate-800/30">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Planos de Assinatura</h2>
-            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-              Escolha o plano ideal para suas necessidades de análise e backtesting
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-foreground mb-4">
+            Escolha Seu Plano
+          </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+            Comece sua jornada profissional nas apostas esportivas com nossos planos flexíveis.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {pricingPlans.map((plan, index) => (
-              <PricingCard 
-                key={index} 
-                {...plan} 
+              <PricingCard
+                key={index}
+                title={plan.title}
+                price={plan.price}
+                originalPrice={plan.originalPrice}
+                discount={plan.discount}
+                duration={plan.duration}
+                features={plan.features}
+                isPopular={plan.isPopular}
+                stripeLink={plan.stripeLink}
               />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Recursos Profissionais Section */}
-      <section className="py-20 md:py-28">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white">Recursos Profissionais</h2>
-          </div>
-          <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-x-12 gap-y-8">
-            <div>
-              <h3 className="text-2xl font-semibold text-emerald-400 mb-6">Análises Detalhadas</h3>
-              <ul className="space-y-3">
-                <BulletPoint>Top 10 Ligas Mais Lucrativas</BulletPoint>
-                <BulletPoint>Top 10 Equipes Mais Rentáveis</BulletPoint>
-                <BulletPoint>5 Placares Mais Comuns com Frequência</BulletPoint>
-                <BulletPoint>Sequências de Vitórias e Derrotas</BulletPoint>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-2xl font-semibold text-emerald-400 mb-6">Funcionalidades</h3>
-              <ul className="space-y-3">
-                <BulletPoint>Filtros Estatísticos Avançados</BulletPoint>
-                <BulletPoint>Filtros Avançados por Time, Liga e Data</BulletPoint>
-                <BulletPoint>Salvamento de Estratégias Favoritas</BulletPoint>
-                <BulletPoint>Gráficos de Evolução Temporal</BulletPoint>
-              </ul>
-            </div>
+      {/* Testimonials Section */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/20">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-foreground mb-12">
+            O Que Nossos Usuários Dizem
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <TestimonialCard>
+              <div className="flex items-center gap-2 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                ))}
+              </div>
+              <p className="text-card-foreground mb-4">
+                "O sistema de backtesting mudou completamente minha abordagem. 
+                Agora posso testar estratégias antes de apostar dinheiro real."
+              </p>
+              <div className="text-sm text-muted-foreground">— Carlos S.</div>
+            </TestimonialCard>
+            
+            <TestimonialCard>
+              <div className="flex items-center gap-2 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                ))}
+              </div>
+              <p className="text-card-foreground mb-4">
+                "A análise H2H é fantástica. Consigo identificar padrões que 
+                antes passavam despercebidos."
+              </p>
+              <div className="text-sm text-muted-foreground">— Marina L.</div>
+            </TestimonialCard>
+            
+            <TestimonialCard>
+              <div className="flex items-center gap-2 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                ))}
+              </div>
+              <p className="text-card-foreground mb-4">
+                "Gestão de bankroll profissional finalmente ao alcance. 
+                Meus resultados melhoraram significativamente."
+              </p>
+              <div className="text-sm text-muted-foreground">— Pedro M.</div>
+            </TestimonialCard>
           </div>
         </div>
       </section>
 
-      {/* Final CTA Section */}
-      <section className="py-20 bg-slate-800/50">
-        <div className="container mx-auto px-6 text-center">
-          <Target className="w-12 h-12 text-emerald-400 mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Pronto para Otimizar suas Estratégias?
+      {/* CTA Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-8">
+            Pronto para Levar Suas Apostas para o Próximo Nível?
           </h2>
-          <p className="text-lg text-slate-300 mb-10 max-w-xl mx-auto">
-            Junte-se aos analistas profissionais que já maximizam seus resultados
+          <p className="text-xl text-muted-foreground mb-12">
+            Junte-se à nossa comunidade de apostadores profissionais e comece a transformar seus dados em lucro.
           </p>
-          <Button
-            onClick={handleLogin}
-            disabled={isLoadingLogin}
-            size="lg"
-            className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-semibold px-12 py-4 text-lg"
-          >
-            {isLoadingLogin ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-900 mr-2"></div>
-              ) : null}
-            Começar Agora
+          <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            Experimente Agora
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="py-12 border-t border-slate-800">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-slate-400">
-            © 2023 Football Data Analysis. Todos os direitos reservados.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }

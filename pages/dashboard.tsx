@@ -132,9 +132,9 @@ export default function Dashboard() {
   const getBestStrategy = (): StrategyData & { name: string | null } => {
     const strategiesWithResults = strategies.filter((s: StrategyData) => s.results?.roi);
     if (strategiesWithResults.length === 0) {
-      return { 
-        results: { roi: 0, totalGames: 0, wins: 0, profit: 0 }, 
-        name: null, 
+      return {
+        results: { roi: 0, totalGames: 0, wins: 0, profit: 0 },
+        name: null,
         id: 0,
         market: '',
         created_date: ''
@@ -184,28 +184,24 @@ export default function Dashboard() {
           <StatsCard
             title="Total de Estratégias"
             value={dateRangeStats.totalStrategies.toString()}
-            change={{ value: dateRangeStats.monthlyStrategies, isPositive: true }}
             icon={Target}
             description="estratégias criadas"
           />
           <StatsCard
             title="ROI Médio"
             value={`${performanceStats.avgROI.toFixed(1)}%`}
-            change={{ value: performanceStats.avgROI, isPositive: performanceStats.avgROI > 0 }}
             icon={TrendingUp}
             description="retorno sobre investimento"
           />
           <StatsCard
             title="Taxa de Acerto"
             value={`${performanceStats.winRate.toFixed(1)}%`}
-            change={{ value: performanceStats.winRate, isPositive: performanceStats.winRate > 50 }}
             icon={Activity}
             description="de apostas certas"
           />
           <StatsCard
             title="Melhor Estratégia"
             value={bestStrategy.name || "Nenhuma"}
-            change={{ value: bestStrategy.results?.roi || 0, isPositive: (bestStrategy.results?.roi || 0) > 0 }}
             icon={Zap}
             description={`${(bestStrategy.results?.roi || 0).toFixed(1)}% ROI`}
           />
@@ -239,7 +235,7 @@ export default function Dashboard() {
           {/* Recent Strategies */}
           <div className="lg:col-span-2">
             <RecentStrategies 
-              strategies={strategies as any}
+              strategies={strategies}
             />
           </div>
 

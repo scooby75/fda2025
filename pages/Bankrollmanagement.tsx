@@ -43,8 +43,8 @@ interface TransactionData {
   competition: string;
   strategy_name: string;
   market: string;
-  stake: string;
-  odds: string;
+  stake: number;
+  odds: number;
   result: "pending" | "win" | "loss" | "void";
   profit: number;
   description: string;
@@ -83,7 +83,7 @@ export default function BankrollManagement() {
       ]);
 
       // Transform data to match our interfaces
-      const transformedBankrolls = bankrollsData.map((b: any) => ({
+      const transformedBankrolls: BankrollData[] = bankrollsData.map((b: any) => ({
         id: String(b.id),
         name: b.name,
         initial_balance: b.initial_balance,
@@ -94,7 +94,7 @@ export default function BankrollManagement() {
         currency: b.currency || 'BRL'
       }));
 
-      const transformedTransactions = transactionsData.map((t: any) => ({
+      const transformedTransactions: TransactionData[] = transactionsData.map((t: any) => ({
         id: String(t.id),
         bankroll_id: String(t.bankroll_id),
         event_name: t.event_name,
@@ -102,8 +102,8 @@ export default function BankrollManagement() {
         competition: t.competition || '',
         strategy_name: t.strategy_name || '',
         market: t.market || '',
-        stake: String(t.stake),
-        odds: String(t.odds),
+        stake: Number(t.stake),
+        odds: Number(t.odds),
         result: t.result as "pending" | "win" | "loss" | "void",
         profit: t.profit || 0,
         description: t.description || '',
@@ -231,12 +231,6 @@ export default function BankrollManagement() {
           <TabsContent value="bankrolls" className="space-y-6">
             <BankrollList
               bankrolls={bankrolls}
-              onEdit={(bankroll: BankrollData | null) => {
-                if (bankroll) {
-                  setSelectedBankroll(bankroll);
-                  setShowCreateBankroll(true);
-                }
-              }}
               onDelete={async (bankrollId: string) => {
                 await Bankroll.delete(parseInt(bankrollId));
                 loadData();
@@ -276,6 +270,7 @@ export default function BankrollManagement() {
           <TabsContent value="settings" className="space-y-6">
             <CreateBankroll
               onCancel={() => setActiveTab("dashboard")}
+              onBankrollCreated={handleCreateBankroll}
             />
           </TabsContent>
         </Tabs>

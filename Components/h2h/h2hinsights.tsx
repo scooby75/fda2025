@@ -1,132 +1,182 @@
 
-import React from 'react';
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DixonColesModel } from './dixoncolesmodel';
+import { Badge } from "@/components/ui/badge";
+import {
+  Trophy,
+  TrendingUp,
+  BarChart3,
+  Target
+} from "lucide-react";
+
+interface GameDataType {
+  id?: string;
+  home: string;
+  away: string;
+  date: string;
+  league: string;
+  season?: number;
+  goals_h_ft?: number;
+  goals_a_ft?: number;
+  goals_h_ht?: number;
+  goals_a_ht?: number;
+  [key: string]: any;
+}
 
 interface H2HInsightsProps {
-  homeRecentGames: any[];
-  awayRecentGames: any[];
-  h2hMatches: any[];
+  h2hMatches: GameDataType[];
   homeTeam: string;
   awayTeam: string;
 }
 
-const calculateForm = (games: any[], team: string) => {
-  if (!games || games.length === 0) return { wins: 0, draws: 0, losses: 0 };
-  
-  let wins = 0, draws = 0, losses = 0;
-  
-  games.forEach((game: any) => {
-    const isHome = game.home_team === team;
-    const homeGoals = game.goals_h_ft || 0;
-    const awayGoals = game.goals_a_ft || 0;
-    
-    if (homeGoals === awayGoals) {
-      draws++;
-    } else if ((isHome && homeGoals > awayGoals) || (!isHome && awayGoals > homeGoals)) {
-      wins++;
-    } else {
-      losses++;
-    }
-  });
-  
-  return { wins, draws, losses };
-};
+export default function H2HInsights({ h2hMatches, homeTeam, awayTeam }: H2HInsightsProps) {
+  const calculateStats = () => {
+    let homeWins = 0, draws = 0, awayWins = 0;
+    let totalGoalsHome = 0, totalGoalsAway = 0;
+    let over25 = 0, under25 = 0;
+    let btts = 0, noBtts = 0;
 
-interface ComparisonRowProps {
-  title: string;
-  homeValue: any;
-  awayValue: any;
-  homeColor: string;
-  awayColor: string;
-}
+    h2hMatches.forEach((match) => {
+      const homeGoals = Number(match.goals_h_ft) || 0;
+      const awayGoals = Number(match.goals_a_ft) || 0;
+      
+      totalGoalsHome += homeGoals;
+      totalGoalsAway += awayGoals;
+      
+      const totalGoals = homeGoals + awayGoals;
+      if (totalGoals > 2.5) over25++;
+      else under25++;
+      
+      if (homeGoals > 0 && awayGoals > 0) btts++;
+      else noBtts++;
+      
+      if (homeGoals > awayGoals) homeWins++;
+      else if (awayGoals > homeGoals) awayWins++;
+      else draws++;
+    });
 
-const ComparisonRow = ({ title, homeValue, awayValue, homeColor, awayColor }: ComparisonRowProps) => (
-  <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
-    <div className="flex-1 text-left">
-      <span className={`font-medium ${homeColor}`}>{homeValue}</span>
-    </div>
-    <div className="flex-1 text-center">
-      <span className="text-sm text-gray-600">{title}</span>
-    </div>
-    <div className="flex-1 text-right">
-      <span className={`font-medium ${awayColor}`}>{awayValue}</span>
-    </div>
-  </div>
-);
+    return {
+      homeWins,
+      draws,
+      awayWins,
+      avgGoalsHome: h2hMatches.length > 0 ? (totalGoalsHome / h2hMatches.length).toFixed(1) : "0.0",
+      avgGoalsAway: h2hMatches.length > 0 ? (totalGoalsAway / h2hMatches.length).toFixed(1) : "0.0",
+      over25Percentage: h2hMatches.length > 0 ? ((over25 / h2hMatches.length) * 100).toFixed(1) : "0.0",
+      bttsPercentage: h2hMatches.length > 0 ? ((btts / h2hMatches.length) * 100).toFixed(1) : "0.0"
+    };
+  };
 
-export default function H2HInsights({ homeRecentGames, awayRecentGames, h2hMatches, homeTeam, awayTeam }: H2HInsightsProps) {
-  const model = new DixonColesModel();
-  const insights = model.calculateH2HInsights(homeRecentGames, awayRecentGames, h2hMatches);
-  
-  const homeForm = calculateForm(homeRecentGames, homeTeam);
-  const awayForm = calculateForm(awayRecentGames, awayTeam);
-  
-  const comparisons = [
-    { title: "Vitórias (últimos 5)", homeValue: homeForm.wins, awayValue: awayForm.wins, homeColor: "text-green-600", awayColor: "text-green-600" },
-    { title: "Empates (últimos 5)", homeValue: homeForm.draws, awayValue: awayForm.draws, homeColor: "text-yellow-600", awayColor: "text-yellow-600" },
-    { title: "Derrotas (últimos 5)", homeValue: homeForm.losses, awayValue: awayForm.losses, homeColor: "text-red-600", awayColor: "text-red-600" },
-    { title: "Força de Ataque", homeValue: `${(insights.rates.homeAttack * 100).toFixed(0)}%`, awayValue: `${(insights.rates.awayAttack * 100).toFixed(0)}%`, homeColor: "text-blue-600", awayColor: "text-blue-600" }
-  ];
+  const stats = calculateStats();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Team Comparison */}
-      <Card className="bg-white shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Comparação Direta</CardTitle>
-          <div className="flex justify-between items-center text-sm text-gray-600">
-            <span className="font-medium">{homeTeam}</span>
-            <span>vs</span>
-            <span className="font-medium">{awayTeam}</span>
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Head to Head Record */}
+      <Card className="bg-card border-border">
+        <CardHeader className="border-b border-border pb-3">
+          <CardTitle className="text-lg text-card-foreground flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-primary" />
+            Histórico H2H
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-1">
-            {comparisons.map((comp, index) => (
-              <ComparisonRow key={index} {...comp} />
-            ))}
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">{homeTeam}</span>
+              <Badge variant="default" className="bg-emerald-500/20 text-emerald-400">
+                {stats.homeWins}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Empates</span>
+              <Badge variant="outline" className="border-muted-foreground/30">
+                {stats.draws}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">{awayTeam}</span>
+              <Badge variant="secondary" className="bg-blue-500/20 text-blue-400">
+                {stats.awayWins}
+              </Badge>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Dixon-Coles Predictions */}
-      <Card className="bg-white shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">Previsões (Dixon-Coles)</CardTitle>
+      {/* Goals Average */}
+      <Card className="bg-card border-border">
+        <CardHeader className="border-b border-border pb-3">
+          <CardTitle className="text-lg text-card-foreground flex items-center gap-2">
+            <Target className="w-5 h-5 text-primary" />
+            Média de Gols
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Resultado da Partida</h4>
-              <div className="grid grid-cols-3 gap-2 text-sm">
-                <div className="text-center p-2 bg-green-50 rounded">
-                  <div className="font-semibold text-green-700">Casa</div>
-                  <div className="text-green-600">{(insights.match.homeWin * 100).toFixed(1)}%</div>
-                </div>
-                <div className="text-center p-2 bg-yellow-50 rounded">
-                  <div className="font-semibold text-yellow-700">Empate</div>
-                  <div className="text-yellow-600">{(insights.match.draw * 100).toFixed(1)}%</div>
-                </div>
-                <div className="text-center p-2 bg-blue-50 rounded">
-                  <div className="font-semibold text-blue-700">Fora</div>
-                  <div className="text-blue-600">{(insights.match.awayWin * 100).toFixed(1)}%</div>
-                </div>
-              </div>
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">{homeTeam}</span>
+              <span className="font-semibold text-foreground">{stats.avgGoalsHome}</span>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">{awayTeam}</span>
+              <span className="font-semibold text-foreground">{stats.avgGoalsAway}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Total Médio</span>
+              <span className="font-semibold text-primary">
+                {(parseFloat(stats.avgGoalsHome) + parseFloat(stats.avgGoalsAway)).toFixed(1)}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Mercado de Gols</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-center p-2 bg-purple-50 rounded">
-                  <div className="font-medium text-purple-700">Over 2.5</div>
-                  <div className="text-purple-600">{(insights.goals.over25 * 100).toFixed(1)}%</div>
-                </div>
-                <div className="text-center p-2 bg-orange-50 rounded">
-                  <div className="font-medium text-orange-700">BTTS</div>
-                  <div className="text-orange-600">{(insights.btts.bttsYes * 100).toFixed(1)}%</div>
-                </div>
-              </div>
+      {/* Over/Under 2.5 */}
+      <Card className="bg-card border-border">
+        <CardHeader className="border-b border-border pb-3">
+          <CardTitle className="text-lg text-card-foreground flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            Over/Under 2.5
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Over 2.5</span>
+              <Badge variant="default" className="bg-orange-500/20 text-orange-400">
+                {stats.over25Percentage}%
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Under 2.5</span>
+              <Badge variant="outline" className="border-muted-foreground/30">
+                {(100 - parseFloat(stats.over25Percentage)).toFixed(1)}%
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* BTTS */}
+      <Card className="bg-card border-border">
+        <CardHeader className="border-b border-border pb-3">
+          <CardTitle className="text-lg text-card-foreground flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            Ambas Marcam
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Sim</span>
+              <Badge variant="default" className="bg-purple-500/20 text-purple-400">
+                {stats.bttsPercentage}%
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Não</span>
+              <Badge variant="outline" className="border-muted-foreground/30">
+                {(100 - parseFloat(stats.bttsPercentage)).toFixed(1)}%
+              </Badge>
             </div>
           </div>
         </CardContent>

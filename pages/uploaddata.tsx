@@ -27,11 +27,16 @@ import {
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
+interface MessageType {
+  type: "error" | "success" | "info" | "warning";
+  text: string;
+}
+
 export default function UploadData() {
   const [uploadType, setUploadType] = useState('GameData');
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [message, setMessage] = useState(null);
+  const [message, setMessage] = useState<MessageType | null>(null);
   const [isClearing, setIsClearing] = useState(false);
 
   const entityOptions = [
@@ -41,7 +46,7 @@ export default function UploadData() {
     { value: 'RankingAway', label: 'Ranking Visitantes (RankingAway)' },
   ];
 
-  const processUpload = async (file, entityType) => {
+  const processUpload = async (file: File, entityType: string) => {
     if (!file) {
       setMessage({ type: "error", text: "Por favor, selecione um arquivo CSV." });
       return;
@@ -83,7 +88,7 @@ export default function UploadData() {
 
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
 
-      let EntityClass;
+      let EntityClass: any;
       switch (entityType) {
         case 'GameData':
           EntityClass = GameData;
@@ -104,7 +109,7 @@ export default function UploadData() {
       const schema = EntityClass.schema();
       const schemaProperties = Object.keys(schema.properties);
 
-      const dataArray = [];
+      const dataArray: any[] = [];
       const parseChunkSize = 1000;
 
       for (let i = 1; i < lines.length; i += parseChunkSize) {
@@ -119,7 +124,7 @@ export default function UploadData() {
           .filter(line => line.trim())
           .map(line => {
             const values = line.split(',');
-            const item = {};
+            const item: any = {};
 
             headers.forEach((header, index) => {
               if (schemaProperties.includes(header)) {
@@ -128,7 +133,7 @@ export default function UploadData() {
                 if (!value || value === '' || value.toLowerCase() === 'null' || value.toLowerCase() === 'undefined') {
                   item[header] = null;
                 } else {
-                  const fieldSchema = schema.properties[header];
+                  const fieldSchema = (schema.properties as any)[header];
                   if (fieldSchema && (fieldSchema.type === 'number' || (Array.isArray(fieldSchema.type) && fieldSchema.type.includes('number')))) {
                     const numValue = parseFloat(value);
                     item[header] = isNaN(numValue) ? null : numValue;
@@ -192,7 +197,7 @@ export default function UploadData() {
         text: `Upload concluído! ${importedCount} registros foram importados de ${dataArray.length} processados.`
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no upload:", error);
       setMessage({
         type: "error",
@@ -204,7 +209,7 @@ export default function UploadData() {
     setTimeout(() => setProgress(0), 4000);
   };
 
-  const clearDatabase = async (entityType) => {
+  const clearDatabase = async (entityType: string) => {
     if (!window.confirm(`Tem certeza que deseja limpar TODOS os dados de ${entityOptions.find(o => o.value === entityType)?.label}? Esta ação não pode ser desfeita.`)) {
       return;
     }
@@ -216,7 +221,7 @@ export default function UploadData() {
     });
 
     try {
-      let EntityClass;
+      let EntityClass: any;
       switch (entityType) {
         case 'GameData':
           EntityClass = GameData;
@@ -254,7 +259,7 @@ export default function UploadData() {
         type: "success",
         text: `Limpeza concluída! ${deletedCount} registros foram removidos com sucesso!`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao limpar dados:", error);
       setMessage({
         type: "error",
@@ -318,7 +323,7 @@ export default function UploadData() {
                 id="csvFile"
                 type="file"
                 accept=".csv"
-                onChange={(e) => processUpload(e.target.files[0], uploadType)}
+                onChange={(e) => e.target.files?.[0] && processUpload(e.target.files[0], uploadType)}
                 disabled={isUploading || isClearing}
                 className="bg-input border-border text-foreground"
               />
