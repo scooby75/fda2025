@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from "react";
 import { Bankroll } from "@/entities/Bankroll";
 import { BetTransaction } from "@/entities/BetTransaction";
@@ -29,17 +30,17 @@ interface TransactionData {
   bankroll_id: string;
   event_name: string;
   event_date: string;
-  competition?: string;
+  competition: string;
   strategy_name: string;
   market: string;
   stake: number;
   odds: number;
   result: 'pending' | 'win' | 'loss' | 'void';
   profit: number;
-  description?: string;
-  tags?: string[];
-  sport?: string;
-  created_at?: string;
+  description: string;
+  tags: string[];
+  sport: string;
+  created_at: string;
   created_date: string;
 }
 
@@ -280,3 +281,4 @@ export default function BankrollManagement() {
     </div>
   );
 }
+

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from "react";
 import { Strategy } from "@/entities/Strategy";
 import { GameData } from "@/entities/GameData";
@@ -28,7 +29,7 @@ import TelegramIntegration from "../Components/backtesting/telegramintegration";
 
 // Unified interfaces for this page
 interface StrategyData {
-  id?: string;
+  id?: number;
   name: string;
   description: string;
   market: string;
@@ -137,7 +138,7 @@ export default function Backtesting() {
 
       // Transform strategies data
       const transformedStrategies: StrategyData[] = strategiesData.map((s: any) => ({
-        id: s.id?.toString(),
+        id: s.id,
         name: s.name,
         description: s.description || '',
         market: s.market || 'Over 2.5',
@@ -200,7 +201,7 @@ export default function Backtesting() {
         name: strategyData.name,
         market: strategyData.market,
         unit_stake: strategyData.unit_stake,
-        id: strategyData.id ? parseInt(strategyData.id) : undefined
+        id: strategyData.id
       };
       
       const results = backtestingEngine.runBacktest(strategyForEngine, gameData, rankingHomeData, rankingAwayData);
@@ -251,7 +252,7 @@ export default function Backtesting() {
 
   const handleLoadStrategy = (strategy: SavedStrategyItem) => {
     const strategyData: StrategyData = {
-      id: strategy.id,
+      id: parseInt(strategy.id),
       name: strategy.name,
       description: strategy.description || '',
       market: strategy.market,
@@ -412,7 +413,7 @@ export default function Backtesting() {
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
               strategies={strategies.map(s => ({ 
-                id: s.id || '0',
+                id: s.id?.toString() || '0',
                 name: s.name,
                 market: s.market,
                 created_date: s.created_date || new Date().toISOString(),
@@ -430,7 +431,7 @@ export default function Backtesting() {
           <TabsContent value="telegram" className="space-y-6">
             <TelegramIntegration 
               strategies={strategies.map(s => ({ 
-                id: parseInt(s.id || '0'),
+                id: s.id || 0,
                 name: s.name,
                 market: s.market || 'Over 2.5',
                 created_date: s.created_date || new Date().toISOString()
@@ -443,3 +444,4 @@ export default function Backtesting() {
     </div>
   );
 }
+
