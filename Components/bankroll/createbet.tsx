@@ -1,76 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Target, Plus } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { BetTransaction } from "@/entities/BetTransaction";
-import { Bankroll } from "@/entities/Bankroll";
 import { DailyGame } from "@/entities/DailyGame";
 import { Strategy } from "@/entities/Strategy";
-import { User } from "@/entities/User";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-
-interface BankrollData {
-  id: string;
-  name: string;
-  currency: string;
-  current_balance: number;
-  initial_balance: number;
-}
-
-interface TransactionData {
-  id: string;
-  bankroll_id: string;
-  event_name: string;
-  strategy_name: string;
-  market: string;
-  odds: number;
-  stake: number;
-  result: 'win' | 'loss' | 'pending' | 'void';
-  profit: number;
-  event_date: string;
-  competition: string;
-  description?: string;
-  tags?: string[];
-}
-
-interface DailyGameData {
-  id: string;
-  home: string;
-  away: string;
-  league: string;
-  date: string;
-  time: string;
-}
-
-interface StrategyData {
-  id: string;
-  name: string;
-  market: string;
-}
-
-interface CreateBetProps {
-  bankrollId: string;
-  bankrolls: BankrollData[];
-  onClose: () => void;
-  onSave: () => void;
-  transaction?: TransactionData;
-  initialData?: Partial<TransactionData>;
-}
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import MultiSelect from "@/components/ui/MultiSelect";
+import { X, Save, Search, Calendar, DollarSign } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface FormData {
   bankroll_id: string;
@@ -88,125 +30,109 @@ interface FormData {
   sport: string;
 }
 
-const initialFormState: FormData = {
-  bankroll_id: "",
-  event_name: "",
-  event_date: "",
-  competition: "",
-  strategy_name: "",
-  market: "",
-  stake: "",
-  odds: "",
-  result: "pending",
-  profit: 0,
-  description: "",
-  tags: [],
-  sport: "Futebol"
-};
+interface CreateBetProps {
+  bankrollId: string;
+  bankrolls: Array<{ id: string; name: string }>;
+  onClose: () => void;
+  onSave: () => void;
+  transaction?: FormData | null;
+  initialData?: Partial<FormData> | null;
+}
 
-export default function CreateBet({
-  bankrollId,
-  bankrolls,
-  onClose,
-  onSave,
-  transaction,
-  initialData
+interface DailyGameData {
+  id: string;
+  home: string;
+  away: string;
+  date: string;
+  time?: string;
+  league: string;
+}
+
+interface StrategyData {
+  id: string;
+  name: string;
+  market: string;
+}
+
+export default function CreateBet({ 
+  bankrollId, 
+  bankrolls, 
+  onClose, 
+  onSave, 
+  transaction = null, 
+  initialData = null 
 }: CreateBetProps) {
-  const [formData, setFormData] = useState<FormData>(initialFormState);
+  const [formData, setFormData] = useState<FormData>({
+    bankroll_id: bankrollId,
+    event_name: '',
+    event_date: '',
+    competition: '',
+    strategy_name: '',
+    market: '',
+    stake: '',
+    odds: '',
+    result: 'pending',
+    profit: 0,
+    description: '',
+    tags: [],
+    sport: 'Futebol'
+  });
+
   const [dailyGames, setDailyGames] = useState<DailyGameData[]>([]);
   const [strategies, setStrategies] = useState<StrategyData[]>([]);
-  const [selectedGame, setSelectedGame] = useState<DailyGameData | null>(null);
+  const [showGameSelector, setShowGameSelector] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadData();
+  }, []);
 
+  useEffect(() => {
     if (transaction) {
       setFormData({
-        bankroll_id: transaction.bankroll_id,
-        event_name: transaction.event_name,
-        event_date: transaction.event_date ? new Date(transaction.event_date).toISOString().split('T')[0] : "",
-        competition: transaction.competition,
-        strategy_name: transaction.strategy_name,
-        market: transaction.market,
-        stake: transaction.stake?.toString() || "",
-        odds: transaction.odds?.toString() || "",
-        result: transaction.result,
-        profit: transaction.profit || 0,
-        description: transaction.description || "",
-        tags: transaction.tags || [],
-        sport: "Futebol"
+        ...transaction,
+        stake: String(transaction.stake),
+        odds: String(transaction.odds)
       });
     } else if (initialData) {
-      setFormData({
-        ...initialFormState,
-        bankroll_id: bankrollId,
-        event_name: initialData.event_name || "",
-        event_date: initialData.event_date ? new Date(initialData.event_date).toISOString().split('T')[0] : (new Date().toISOString().split('T')[0]),
-        competition: initialData.competition || "",
-        sport: "Futebol"
-      });
-    } else {
-      setFormData({
-        ...initialFormState,
-        bankroll_id: bankrollId,
-        event_date: new Date().toISOString().split('T')[0],
-        sport: "Futebol"
-      });
+      setFormData(prev => ({
+        ...prev,
+        ...initialData,
+        event_name: initialData.event_name || '',
+        event_date: initialData.event_date || '',
+        competition: initialData.competition || ''
+      }));
     }
-  }, [transaction, initialData, bankrollId]);
+  }, [transaction, initialData]);
 
   const loadData = async () => {
     try {
-      const currentUser = await User.me();
-      const [games, savedStrategies] = await Promise.all([
-        DailyGame.list('-created_date'),
-        Strategy.filter({ created_by: currentUser.email }, "-created_date")
+      const [gamesData, strategiesData] = await Promise.all([
+        DailyGame.list(),
+        Strategy.list()
       ]);
-
-      setDailyGames(games as DailyGameData[]);
-      setStrategies(savedStrategies as StrategyData[]);
+      setDailyGames(gamesData);
+      setStrategies(strategiesData);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error('Error loading data:', error);
     }
   };
 
-  const handleInputChange = (field: string, value: string | number) => {
-    let newStake = field === 'stake' ? parseFloat(value.toString()) : parseFloat(formData.stake);
-    let newOdds = field === 'odds' ? parseFloat(value.toString()) : parseFloat(formData.odds);
-    let newResult = field === 'result' ? value : formData.result;
-
-    let newProfit = formData.profit;
-
-    if (newResult !== 'pending' && !isNaN(newStake) && !isNaN(newOdds)) {
-      if (newResult === 'win') {
-        newProfit = (newOdds - 1) * newStake;
-      } else if (newResult === 'loss') {
-        newProfit = -newStake;
-      } else {
-        newProfit = 0;
-      }
-    } else if (newResult === 'pending') {
-      newProfit = 0;
-    }
-
+  const handleInputChange = (field: keyof FormData, value: string | number | string[]) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value.toString(),
-      profit: parseFloat(newProfit.toFixed(2))
+      [field]: value
     }));
   };
 
   const handleGameSelect = (gameId: string) => {
-    const game = dailyGames.find((g: DailyGameData) => g.id === gameId);
-    if (game) {
-      setSelectedGame(game);
-      setFormData(prev => ({
-        ...prev,
-        event_name: `${game.home} vs ${game.away}`,
-        event_date: game.date,
-        competition: game.league
-      }));
+    const selectedGame = dailyGames.find((g: DailyGameData) => g.id === gameId);
+    if (selectedGame) {
+      handleInputChange('event_name', `${selectedGame.home} vs ${selectedGame.away}`);
+      handleInputChange('event_date', selectedGame.date);
+      handleInputChange('competition', selectedGame.league);
+      setShowGameSelector(false);
     }
   };
 
@@ -215,288 +141,339 @@ export default function CreateBet({
     setIsLoading(true);
 
     try {
-      const dataToSubmit = {
+      const stake = parseFloat(formData.stake);
+      const odds = parseFloat(formData.odds);
+      const profit = formData.result === 'win' ? 
+        (stake * odds) - stake : 
+        formData.result === 'loss' ? -stake : 0;
+
+      const transactionData = {
         ...formData,
-        bankroll_id: formData.bankroll_id,
-        stake: parseFloat(formData.stake),
-        odds: parseFloat(formData.odds),
-        profit: formData.profit
+        stake: formData.stake,
+        odds: formData.odds,
+        profit
       };
 
-      if (transaction) {
-        await BetTransaction.update(parseInt(transaction.id), dataToSubmit);
+      if (transaction?.id) {
+        await BetTransaction.update(transaction.id, transactionData);
       } else {
-        await BetTransaction.create(dataToSubmit);
+        await BetTransaction.create(transactionData);
       }
 
-      const bankrollToUpdate = await Bankroll.get(parseInt(formData.bankroll_id));
-      const allBets = await BetTransaction.filter({ bankroll_id: formData.bankroll_id });
-      const totalProfit = allBets
-        .filter((b: any) => b.result !== 'pending')
-        .reduce((sum: number, t: any) => sum + (t.profit || 0), 0);
-
-      const newBalance = bankrollToUpdate.initial_balance + totalProfit;
-      await Bankroll.update(parseInt(formData.bankroll_id), { current_balance: newBalance });
-
       onSave();
+      onClose();
     } catch (error) {
-      console.error("Erro ao salvar aposta:", error);
+      console.error('Error saving bet:', error);
     }
-
     setIsLoading(false);
   };
 
   const filteredGames = dailyGames.filter((game: DailyGameData) =>
-    game.home && game.away && game.league && game.date && game.time
+    game.home.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    game.away.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    game.league.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const availableTags = ['Valor', 'Zebra', 'Casa', 'Fora', 'Over', 'Under', 'BTTS'];
+
+  const handleTagChange = (selectedTags: string[]) => {
+    handleInputChange('tags', selectedTags);
+  };
+
+  const handleBankrollChange = (value: string) => {
+    handleInputChange('bankroll_id', value);
+  };
+
+  const selectedBankroll = bankrolls.find((b: { id: string; name: string }) => b.id === formData.bankroll_id);
+
+  const getGameOptions = () => {
+    return dailyGames.map((game: DailyGameData) => ({
+      value: game.id,
+      label: `${game.home} vs ${game.away} - ${game.league} ${game.time ? `(${game.time})` : ''}`
+    }));
+  };
+
+  const marketOptions = [
+    'Resultado Final (1X2)',
+    'Dupla Chance',
+    'Handicap Asiático',
+    'Total de Gols (Over/Under)',
+    'Ambas Marcam (BTTS)',
+    'Gols do 1º Tempo',
+    'Resultado/Total',
+    'Handicap Europeu',
+    'Próximo Gol',
+    'Escanteios'
+  ];
+
+  const handleSportChange = (field: keyof FormData, value: string) => {
+    handleInputChange(field, value);
+  };
+
+  const handleStrategyChange = (strategyName: string) => {
+    const selectedStrategy = strategies.find((s: StrategyData) => s.name === strategyName);
+    if (selectedStrategy) {
+      handleInputChange('strategy_name', selectedStrategy.name);
+      handleInputChange('market', selectedStrategy.market);
+    }
+  };
+
+  const getStrategyOptions = () => {
+    return strategies.map((strategy: StrategyData) => ({
+      id: strategy.id,
+      name: strategy.name,
+      label: strategy.name
+    }));
+  };
+
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] bg-card border-border text-card-foreground p-0">
-        <DialogHeader className="border-b border-border p-6">
-          <DialogTitle className="text-card-foreground flex items-center gap-2">
-            <Target className="w-6 h-6 text-primary" />
-            {transaction ? 'Editar Aposta' : 'Criar Nova Aposta'}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="p-6">
+    <>
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-card-foreground flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-primary" />
+              {transaction ? 'Editar Aposta' : 'Nova Aposta'}
+            </DialogTitle>
+          </DialogHeader>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="bankroll_id" className="text-muted-foreground">Banca</Label>
-                <Select
-                  value={formData.bankroll_id || ''}
-                  onValueChange={(value: string) => handleInputChange('bankroll_id', value)}
-                  required
-                >
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Banca</Label>
+                <Select value={formData.bankroll_id} onValueChange={handleBankrollChange}>
                   <SelectTrigger className="bg-input border-border text-foreground">
-                    <SelectValue placeholder="Selecione uma banca..." />
+                    <SelectValue placeholder="Selecione a banca" />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    {bankrolls?.map((b: BankrollData) => (
-                      <SelectItem key={b.id} value={b.id} style={{ color: 'rgb(15, 23, 42)' }}>
-                        {b.name} ({b.currency} {b.current_balance?.toFixed(2)})
+                  <SelectContent>
+                    {bankrolls.map((bankroll: { id: string; name: string }) => (
+                      <SelectItem key={bankroll.id} value={bankroll.id}>
+                        {bankroll.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div>
-                <Label htmlFor="daily_game" className="text-muted-foreground">Evento (Jogos do Dia)</Label>
-                <Select
-                  value={selectedGame?.id || ''}
-                  onValueChange={handleGameSelect}
-                >
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Esporte</Label>
+                <Select value={formData.sport} onValueChange={(value: string) => handleSportChange('sport', value)}>
                   <SelectTrigger className="bg-input border-border text-foreground">
-                    <SelectValue placeholder="Selecionar jogo do dia..." />
+                    <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover border-border text-popover-foreground max-h-60">
-                    {filteredGames.map((game: DailyGameData) => (
-                      <SelectItem key={game.id} value={game.id} style={{ color: 'rgb(15, 23, 42)' }}>
-                        <div className="flex flex-col">
-                          <span>{game.home} vs {game.away}</span>
-                          <span className="text-xs opacity-70">{game.league} - {game.time}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                  <SelectContent>
+                    <SelectItem value="Futebol">Futebol</SelectItem>
+                    <SelectItem value="Basquete">Basquete</SelectItem>
+                    <SelectItem value="Tennis">Tennis</SelectItem>
+                    <SelectItem value="Volei">Vôlei</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="event_name" className="text-muted-foreground">Nome do Evento</Label>
+            <div className="space-y-2">
+              <Label className="text-card-foreground">Evento</Label>
+              <div className="flex gap-2">
                 <Input
-                  id="event_name"
                   value={formData.event_name}
                   onChange={(e) => handleInputChange('event_name', e.target.value)}
-                  placeholder="Ex: Manchester United vs Liverpool"
+                  placeholder="Nome do evento"
                   className="bg-input border-border text-foreground"
-                  required
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowGameSelector(true)}
+                  className="border-border text-muted-foreground hover:bg-muted/20"
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
               </div>
+            </div>
 
-              <div>
-                <Label htmlFor="event_date" className="text-muted-foreground">Data</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Data do Evento</Label>
                 <Input
-                  id="event_date"
                   type="date"
                   value={formData.event_date}
                   onChange={(e) => handleInputChange('event_date', e.target.value)}
                   className="bg-input border-border text-foreground"
-                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Competição</Label>
+                <Input
+                  value={formData.competition}
+                  onChange={(e) => handleInputChange('competition', e.target.value)}
+                  placeholder="Nome da competição"
+                  className="bg-input border-border text-foreground"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="sport" className="text-muted-foreground">Esporte</Label>
-                <Select value={formData.sport} onValueChange={(value: string) => handleInputChange('sport', value)}>
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Estratégia</Label>
+                <Select value={formData.strategy_name} onValueChange={handleStrategyChange}>
+                  <SelectTrigger className="bg-input border-border text-foreground">
+                    <SelectValue placeholder="Selecione a estratégia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getStrategyOptions().map((strategy: { id: string; name: string; label: string }) => (
+                      <SelectItem key={strategy.id} value={strategy.name}>
+                        {strategy.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Mercado</Label>
+                <Select value={formData.market} onValueChange={(value: string) => handleInputChange('market', value)}>
+                  <SelectTrigger className="bg-input border-border text-foreground">
+                    <SelectValue placeholder="Selecione o mercado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {marketOptions.map((market) => (
+                      <SelectItem key={market} value={market}>
+                        {market}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Stake</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.stake}
+                  onChange={(e) => handleInputChange('stake', e.target.value)}
+                  placeholder="0.00"
+                  className="bg-input border-border text-foreground"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Odds</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.odds}
+                  onChange={(e) => handleInputChange('odds', e.target.value)}
+                  placeholder="1.00"
+                  className="bg-input border-border text-foreground"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Resultado</Label>
+                <Select value={formData.result} onValueChange={(value: string) => handleInputChange('result', value)}>
                   <SelectTrigger className="bg-input border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    <SelectItem value="Futebol">Futebol</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="competition" className="text-muted-foreground">Competição</Label>
-                <Input
-                  id="competition"
-                  value={formData.competition}
-                  onChange={(e) => handleInputChange('competition', e.target.value)}
-                  placeholder="Ex: Premier League, Copa do Brasil"
-                  className="bg-input border-border text-foreground"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="strategy" className="text-muted-foreground">Estratégia</Label>
-              <Select
-                value={formData.strategy_name}
-                onValueChange={(strategyName: string) => {
-                  const selectedStrategy = strategies.find(s => s.name === strategyName);
-                  if (selectedStrategy) {
-                    handleInputChange('strategy_name', selectedStrategy.name);
-                    handleInputChange('market', selectedStrategy.market);
-                  } else {
-                    handleInputChange('strategy_name', strategyName);
-                    handleInputChange('market', '');
-                  }
-                }}
-              >
-                <SelectTrigger className="bg-input border-border text-foreground">
-                  <SelectValue placeholder="Selecione a estratégia..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border max-h-60">
-                  {strategies.map(strategy => (
-                    <SelectItem key={strategy.id} value={strategy.name} style={{ color: 'rgb(15, 23, 42)' }}>
-                      {strategy.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="stake" className="text-muted-foreground">Stake</Label>
-                <Input
-                  id="stake"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.stake}
-                  onChange={(e) => handleInputChange('stake', e.target.value)}
-                  placeholder="300.00"
-                  className="bg-input border-border text-foreground"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="odds" className="text-muted-foreground">Odd</Label>
-                <Input
-                  id="odds"
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  value={formData.odds}
-                  onChange={(e) => handleInputChange('odds', e.target.value)}
-                  placeholder="2.50"
-                  className="bg-input border-border text-foreground"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="market" className="text-muted-foreground">Mercado</Label>
-                <Input
-                  id="market"
-                  value={formData.market}
-                  onChange={(e) => handleInputChange('market', e.target.value)}
-                  placeholder="Over 2.5"
-                  className="bg-input border-border text-foreground"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="result" className="text-muted-foreground">Resultado</Label>
-                <Select
-                  value={formData.result}
-                  onValueChange={(value) => handleInputChange('result', value)}
-                >
-                  <SelectTrigger className="bg-input border-border text-foreground">
-                    <SelectValue placeholder="Selecione o resultado" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    <SelectItem value="pending" style={{ color: 'rgb(15, 23, 42)' }}>Pendente</SelectItem>
-                    <SelectItem value="win" style={{ color: 'rgb(15, 23, 42)' }}>Ganho</SelectItem>
-                    <SelectItem value="loss" style={{ color: 'rgb(15, 23, 42)' }}>Perda</SelectItem>
-                    <SelectItem value="void" style={{ color: 'rgb(15, 23, 42)' }}>Anulado</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="win">Vitória</SelectItem>
+                    <SelectItem value="loss">Derrota</SelectItem>
+                    <SelectItem value="void">Anulada</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="profit" className="text-muted-foreground">Lucro (R$)</Label>
-              <Input
-                id="profit"
-                type="number"
-                step="0.01"
-                value={formData.profit}
-                onChange={(e) => handleInputChange('profit', e.target.value)}
-                placeholder="0.00"
+            <div className="space-y-2">
+              <Label className="text-card-foreground">Tags</Label>
+              <MultiSelect
+                options={availableTags.map(tag => ({ value: tag, label: tag }))}
+                selected={formData.tags}
+                onChange={handleTagChange}
+                placeholder="Selecione as tags..."
                 className="bg-input border-border text-foreground"
-                disabled={formData.result === 'pending'}
               />
             </div>
 
-            <div>
-              <Label htmlFor="description" className="text-muted-foreground">Descrição</Label>
+            <div className="space-y-2">
+              <Label className="text-card-foreground">Descrição</Label>
               <Textarea
-                id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Adicione detalhes sobre a aposta..."
-                className="bg-input border-border text-foreground h-20"
+                placeholder="Detalhes adicionais sobre a aposta..."
+                className="bg-input border-border text-foreground"
+                rows={3}
               />
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex justify-end gap-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="flex-1 border-border text-muted-foreground hover:bg-muted/20"
+                className="border-border text-muted-foreground hover:bg-muted/20"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading || !formData.bankroll_id || !formData.event_name || !formData.stake || !formData.odds}
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={isLoading}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2"></div>
-                    {transaction ? 'Atualizando...' : 'Salvando...'}
-                  </>
-                ) : (
-                  transaction ? 'Atualizar Aposta' : 'Salvar Aposta'
-                )}
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? 'Salvando...' : 'Salvar Aposta'}
               </Button>
             </div>
           </form>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {showGameSelector && (
+        <Dialog open={showGameSelector} onOpenChange={setShowGameSelector}>
+          <DialogContent className="bg-card border-border max-w-4xl max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="text-card-foreground flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                Selecionar Jogo
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por time ou liga..."
+                className="bg-input border-border text-foreground"
+              />
+
+              <div className="max-h-96 overflow-y-auto space-y-2">
+                {filteredGames.map((game: DailyGameData) => (
+                  <div
+                    key={game.id}
+                    onClick={() => handleGameSelect(game.id)}
+                    className="p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/20 transition-colors"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-card-foreground">
+                          {game.home} vs {game.away}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {game.league} • {game.date} {game.time && `• ${game.time}`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }

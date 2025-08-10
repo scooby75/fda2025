@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,11 +10,28 @@ import Navigation from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface DailyGameData {
+  id: string;
+  home: string;
+  away: string;
+  date: string;
+  time?: string;
+  league: string;
+  odd_h_ft?: number;
+  odd_d_ft?: number;
+  odd_a_ft?: number;
+  odd_over25_ft?: number;
+  odd_btts_yes?: number;
+  xg_home_pre?: number;
+  xg_away_pre?: number;
+  strategy?: string;
+}
+
 const DailyGames = () => {
-  const [games, setGames] = useState([]);
+  const [games, setGames] = useState<DailyGameData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStrategy, setSelectedStrategy] = useState("none"); // Alterado para 'none'
+  const [selectedStrategy, setSelectedStrategy] = useState("none");
 
   useEffect(() => {
     fetchDailyGames();
@@ -37,20 +55,16 @@ const DailyGames = () => {
     }
   };
 
-  // Ajuste para filtrar também por estratégia (exemplo genérico)
-  const filteredGames = games.filter(game => {
+  const filteredGames = games.filter((game: DailyGameData) => {
     const matchesSearch = 
       game.home?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.away?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       game.league?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Exemplo simples de filtro por estratégia
     if (selectedStrategy === "none") {
       return matchesSearch;
     }
 
-    // Implemente sua lógica real aqui para filtrar por estratégia
-    // Exemplo fictício:
     if (selectedStrategy === "ha-visitante") {
       return matchesSearch && game.strategy === "ha-visitante";
     }
@@ -67,7 +81,7 @@ const DailyGames = () => {
     return matchesSearch;
   });
 
-  const formatOdds = (odds) => {
+  const formatOdds = (odds: number | undefined) => {
     return odds ? Number(odds).toFixed(2) : "-";
   };
 
@@ -107,7 +121,7 @@ const DailyGames = () => {
                     <SelectValue placeholder="Estratégia" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Não filtrar</SelectItem> {/* alterado de "" para "none" */}
+                    <SelectItem value="none">Não filtrar</SelectItem>
                     <SelectItem value="ha-visitante">HA Visitante</SelectItem>
                     <SelectItem value="raid-boss">Raid Boss</SelectItem>
                     <SelectItem value="back-home-ev">Back Home EV+</SelectItem>
@@ -141,7 +155,7 @@ const DailyGames = () => {
                     </div>
 
                     {/* Games */}
-                    {filteredGames.map((game, index) => (
+                    {filteredGames.map((game: DailyGameData, index: number) => (
                       <div key={game.id || index} className="grid grid-cols-12 gap-4 p-4 border-b border-border hover:bg-secondary/20 transition-colors">
                         <div className="col-span-2">
                           <div className="flex flex-col">

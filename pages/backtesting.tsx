@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { Strategy } from "@/entities/Strategy";
 import { GameData } from "@/entities/GameData";
-import { RankingHome } from "@/entities/RankingHome"; // New import
-import { RankingAway } from "@/entities/RankingAway"; // New import
+import { RankingHome } from "@/entities/RankingHome";
+import { RankingAway } from "@/entities/RankingAway";
 import { User } from "@/entities/User";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,20 +20,51 @@ import {
   MessageCircle
 } from "lucide-react";
 
-import StrategyForm from "../components/backtesting/StrategyForm";
-import StrategyResults from "../components/backtesting/StrategyResults";
-import SavedStrategies from "../components/backtesting/SavedStrategies";
+import StrategyForm from "../Components/backtesting/strategyform";
+import StrategyResults from "../Components/backtesting/strategyresults";
+import SavedStrategies from "../Components/backtesting/savedstrategies";
 import BacktestingEngine from "../components/backtesting/BacktestingEngine";
-import TelegramIntegration from "../components/backtesting/TelegramIntegration";
+import TelegramIntegration from "../Components/backtesting/telegramintegration";
+
+interface StrategyData {
+  id?: number;
+  name: string;
+  market: string;
+  season?: string | string[];
+  min_ranking_home?: number;
+  max_ranking_home?: number;
+  min_ranking_away?: number;
+  max_ranking_away?: number;
+  [key: string]: any;
+}
+
+interface GameDataType {
+  id?: string;
+  home: string;
+  away: string;
+  date: string;
+  league: string;
+  season?: number;
+  goals_h_ft?: number;
+  goals_a_ft?: number;
+  [key: string]: any;
+}
+
+interface RankingData {
+  id: string;
+  team: string;
+  position: number;
+  [key: string]: any;
+}
 
 export default function Backtesting() {
   const [activeTab, setActiveTab] = useState("form");
-  const [strategies, setStrategies] = useState([]);
-  const [gameData, setGameData] = useState([]);
-  const [rankingHomeData, setRankingHomeData] = useState([]); // New state
-  const [rankingAwayData, setRankingAwayData] = useState([]); // New state
-  const [currentStrategy, setCurrentStrategy] = useState(null);
-  const [currentResults, setCurrentResults] = useState(null);
+  const [strategies, setStrategies] = useState<StrategyData[]>([]);
+  const [gameData, setGameData] = useState<GameDataType[]>([]);
+  const [rankingHomeData, setRankingHomeData] = useState<RankingData[]>([]);
+  const [rankingAwayData, setRankingAwayData] = useState<RankingData[]>([]);
+  const [currentStrategy, setCurrentStrategy] = useState<StrategyData | null>(null);
+  const [currentResults, setCurrentResults] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -48,30 +79,29 @@ export default function Backtesting() {
       const [strategiesData, allGameData, allRankingHome, allRankingAway] = await Promise.all([
         Strategy.filter({ created_by: currentUser.email }, "-created_date"),
         GameData.list(),
-        RankingHome.list(), // Fetch ranking home data
-        RankingAway.list()  // Fetch ranking away data
+        RankingHome.list(),
+        RankingAway.list()
       ]);
 
       setStrategies(strategiesData);
       setGameData(allGameData);
-      setRankingHomeData(allRankingHome); // Set ranking home data
-      setRankingAwayData(allRankingAway); // Set ranking away data
+      setRankingHomeData(allRankingHome);
+      setRankingAwayData(allRankingAway);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
     setIsDataLoading(false);
   };
 
-  const handleRunBacktest = async (strategyData) => {
+  const handleRunBacktest = async (strategyData: StrategyData) => {
     setIsLoading(true);
 
     try {
-      // Executar backtesting com os dados
       const backtestingEngine = new BacktestingEngine();
-      const results = backtestingEngine.runBacktest(strategyData, gameData, rankingHomeData, rankingAwayData); // Pass new data
+      const results = backtestingEngine.runBacktest(strategyData, gameData, rankingHomeData, rankingAwayData);
 
       setCurrentResults(results);
-      setCurrentStrategy(strategyData); // Update currentStrategy with the executed strategy data
+      setCurrentStrategy(strategyData);
       setActiveTab("results");
     } catch (error) {
       console.error("Erro no backtesting:", error);
@@ -80,12 +110,12 @@ export default function Backtesting() {
     setIsLoading(false);
   };
 
-  const handleRunNewBacktest = (newStrategy) => {
+  const handleRunNewBacktest = (newStrategy: StrategyData) => {
     setCurrentStrategy(newStrategy);
     handleRunBacktest(newStrategy);
   };
 
-  const handleSaveStrategy = async (strategyData, results) => {
+  const handleSaveStrategy = async (strategyData: StrategyData, results: any) => {
     try {
       const strategyToSave = {
         ...strategyData,
@@ -93,20 +123,20 @@ export default function Backtesting() {
       };
 
       await Strategy.create(strategyToSave);
-      loadData(); // Recarregar estratégias salvas
+      loadData();
       setActiveTab("saved");
     } catch (error) {
       console.error("Erro ao salvar estratégia:", error);
     }
   };
 
-  const handleLoadStrategy = (strategy) => {
+  const handleLoadStrategy = (strategy: StrategyData) => {
     setCurrentStrategy(strategy);
     setCurrentResults(strategy.results);
     setActiveTab("form");
   };
 
-  const handleStrategyChange = (updatedStrategy) => {
+  const handleStrategyChange = (updatedStrategy: StrategyData) => {
     setCurrentStrategy(updatedStrategy);
   };
 
@@ -180,8 +210,8 @@ export default function Backtesting() {
                 ) : (
                   <StrategyForm
                     gameData={gameData}
-                    rankingHomeData={rankingHomeData} // Pass ranking home data
-                    rankingAwayData={rankingAwayData} // Pass ranking away data
+                    rankingHomeData={rankingHomeData}
+                    rankingAwayData={rankingAwayData}
                     onRunBacktest={handleRunBacktest}
                     isLoading={isLoading}
                     initialStrategy={currentStrategy}
@@ -226,7 +256,7 @@ export default function Backtesting() {
             <SavedStrategies
               strategies={strategies}
               onLoadStrategy={handleLoadStrategy}
-              onDeleteStrategy={async (strategyId) => {
+              onDeleteStrategy={async (strategyId: string) => {
                 await Strategy.delete(strategyId);
                 loadData();
               }}

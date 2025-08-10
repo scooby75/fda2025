@@ -20,15 +20,36 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
 
-import StatsCard from "../components/dashboard/StatsCard";
-import RecentStrategies from "../components/dashboard/RecentStrategies";
-import QuickActions from "../components/dashboard/QuickActions";
-import DataSummary from "../components/dashboard/DataSummary";
+import StatsCard from "../Components/dashboard/statscard";
+import RecentStrategies from "../Components/dashboard/recentstrategies";
+import QuickActions from "../Components/dashboard/QuickActions";
+import DataSummary from "../Components/dashboard/datasummary";
+
+interface StrategyData {
+  id: string;
+  name: string;
+  results?: {
+    roi: number;
+    total_profit: number;
+  };
+}
+
+interface UserData {
+  email: string;
+  role: string;
+  full_name: string;
+}
+
+interface GameDataType {
+  id: string;
+  date: string;
+  league: string;
+}
 
 export default function Dashboard() {
-  const [strategies, setStrategies] = useState([]);
+  const [strategies, setStrategies] = useState<StrategyData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [totalGameRecords, setTotalGameRecords] = useState(0);
   const [dataSummaryStats, setDataSummaryStats] = useState({
     uniqueLeagues: 0,
@@ -44,7 +65,7 @@ export default function Dashboard() {
     try {
       const currentUser = await User.me();
       const [strategiesData, allGameData] = await Promise.all([
-        Strategy.filter({ created_by: currentUser.email }, "-created_date", 50),
+        Strategy.filter({ created_by: currentUser.email }, "-created_date"),
         GameData.list()
       ]);
       
@@ -54,11 +75,11 @@ export default function Dashboard() {
       setTotalGameRecords(allGameData.length);
 
       if (allGameData.length > 0) {
-        const validDates = allGameData.filter(g => g.date && !isNaN(new Date(g.date))).map(g => new Date(g.date));
+        const validDates = allGameData.filter((g: GameDataType) => g.date && !isNaN(new Date(g.date).getTime())).map((g: GameDataType) => new Date(g.date).getTime());
         const latestGameDate = validDates.length > 0 ? new Date(Math.max(...validDates)) : null;
 
         setDataSummaryStats({
-          uniqueLeagues: [...new Set(allGameData.map(g => g.league))].length,
+          uniqueLeagues: [...new Set(allGameData.map((g: GameDataType) => g.league))].length,
           latestGame: latestGameDate ? format(latestGameDate, 'dd/MM/yyyy') : '-'
         });
       } else {
@@ -76,11 +97,11 @@ export default function Dashboard() {
 
   const getStats = () => {
     const totalStrategies = strategies.length;
-    const profitableStrategies = strategies.filter(s => s.results?.roi > 0).length;
-    const totalProfit = strategies.reduce((sum, s) => sum + (s.results?.total_profit || 0), 0);
-    const bestStrategy = strategies.reduce((best, current) => 
+    const profitableStrategies = strategies.filter((s: StrategyData) => s.results?.roi && s.results.roi > 0).length;
+    const totalProfit = strategies.reduce((sum: number, s: StrategyData) => sum + (s.results?.total_profit || 0), 0);
+    const bestStrategy = strategies.reduce((best: StrategyData, current: StrategyData) => 
       (current.results?.roi || 0) > (best.results?.roi || 0) ? current : best, 
-      { results: { roi: 0 }, name: null }
+      { results: { roi: 0 }, name: null } as StrategyData & { name: string | null }
     );
 
     return {
@@ -178,7 +199,7 @@ export default function Dashboard() {
                 {strategies.length > 0 ? (
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={strategies.slice(0, 10).map((s, i) => ({
+                      <LineChart data={strategies.slice(0, 10).map((s: StrategyData, i: number) => ({
                         name: s.name,
                         roi: s.results?.roi || 0,
                         profit: s.results?.total_profit || 0

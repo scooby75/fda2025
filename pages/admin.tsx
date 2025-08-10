@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import UserStats from "../Components/admin/userstats";
+import UserStats from "../Components/admin/UserStats";
 import UserActions from "../Components/admin/useractions";
 
 interface UserData {
@@ -115,7 +115,7 @@ export default function Admin() {
     return expirationDate.toISOString();
   };
 
-  const handleUpdateUserStatus = async (userId: string, newStatus: string, planType: string | null = null) => {
+  const handleUpdateUserStatus = async (userId: string, newStatus: 'pending' | 'approved' | 'denied' | 'blocked', planType: string | null = null) => {
     try {
       const updateData: any = {
         status: newStatus,
@@ -377,8 +377,8 @@ export default function Admin() {
                         </TableCell>
                         <TableCell className="text-center">
                           <UserActions 
-                            user={user}
-                            onApprove={(selectedUserId, planType) => handleUpdateUserStatus(selectedUserId, 'approved', planType)}
+                            user={user as any}
+                            onApprove={(selectedUserId: string, planType: string) => handleUpdateUserStatus(selectedUserId, 'approved', planType)}
                             onDeny={() => confirmAction('deny', user.id, user.full_name)}
                             onBlock={() => confirmAction('block', user.id, user.full_name)}
                             onDelete={() => confirmAction('delete', user.id, user.full_name)}

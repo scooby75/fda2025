@@ -33,6 +33,9 @@ interface BankrollData {
   currency: string;
   current_balance: number;
   initial_balance: number;
+  start_date: string;
+  is_active: boolean;
+  commission_percentage: number;
 }
 
 interface TransactionData {
@@ -49,6 +52,7 @@ interface TransactionData {
   competition: string;
   description?: string;
   tags?: string[];
+  created_date: string;
 }
 
 interface InitialBetData {
@@ -64,8 +68,8 @@ export default function BankrollManagement() {
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateBet, setShowCreateBet] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
-  const [initialBetData, setInitialBetData] = useState<InitialBetData | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionData | undefined>(undefined);
+  const [initialBetData, setInitialBetData] = useState<Partial<TransactionData> | undefined>(undefined);
 
   const location = useLocation();
 
@@ -73,7 +77,7 @@ export default function BankrollManagement() {
     const params = new URLSearchParams(location.search);
     const eventName = params.get('eventName');
     if (eventName) {
-      const betData: InitialBetData = {
+      const betData: Partial<TransactionData> = {
         event_name: eventName,
         event_date: params.get('eventDate') || '',
         competition: params.get('competition') || '',
@@ -97,7 +101,7 @@ export default function BankrollManagement() {
         BetTransaction.list("-created_date")
       ]);
 
-      const updatedBankrolls = userBankrolls.map((bankroll: any) => {
+      const updatedBankrolls: BankrollData[] = userBankrolls.map((bankroll: any) => {
         const bankrollTransactions = allTransactions.filter((t: any) => t.bankroll_id === bankroll.id && t.result !== 'pending');
         const totalProfit = bankrollTransactions.reduce((sum: number, t: any) => sum + (t.profit || 0), 0);
         return {
@@ -112,7 +116,7 @@ export default function BankrollManagement() {
       if (updatedBankrolls.length > 0 && !selectedBankroll) {
         setSelectedBankroll(updatedBankrolls[0]);
       } else if (selectedBankroll) {
-        const refreshedSelected = updatedBankrolls.find((b: any) => b.id === selectedBankroll.id);
+        const refreshedSelected = updatedBankrolls.find((b: BankrollData) => b.id === selectedBankroll.id);
         setSelectedBankroll(refreshedSelected || (updatedBankrolls.length > 0 ? updatedBankrolls[0] : null));
       }
       
@@ -127,21 +131,21 @@ export default function BankrollManagement() {
     setActiveTab("dashboard");
   };
 
-  const handleBankrollSelect = (bankroll: BankrollData) => {
+  const handleBankrollSelect = (bankroll: BankrollData | null) => {
     setSelectedBankroll(bankroll);
     setActiveTab("dashboard");
   };
 
   const handleEditBet = (bet: TransactionData) => {
-    setInitialBetData(null);
+    setInitialBetData(undefined);
     setEditingTransaction(bet);
     setShowCreateBet(true);
   };
 
   const handleOpenCreateBet = () => {
-    setEditingTransaction(null);
+    setEditingTransaction(undefined);
     if (!location.search) {
-      setInitialBetData(null); 
+      setInitialBetData(undefined); 
     }
     setShowCreateBet(true);
   };
@@ -211,7 +215,7 @@ export default function BankrollManagement() {
             <BankrollDashboard 
               bankrolls={bankrolls}
               selectedBankroll={selectedBankroll}
-              transactions={transactions}
+              transactions={transactions.filter((t: TransactionData) => t.bankroll_id === selectedBankroll?.id)}
               isLoading={isLoading}
               onBankrollSelect={handleBankrollSelect}
             />
@@ -278,11 +282,11 @@ export default function BankrollManagement() {
           bankrolls={bankrolls}
           onClose={() => {
             setShowCreateBet(false);
-            setEditingTransaction(null);
+            setEditingTransaction(undefined);
             if (location.search) {
               window.history.replaceState({}, document.title, location.pathname);
             }
-            setInitialBetData(null);
+            setInitialBetData(undefined);
           }}
           onSave={loadData}
           transaction={editingTransaction}
