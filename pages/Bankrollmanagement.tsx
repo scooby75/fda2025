@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Bankroll } from "@/entities/Bankroll";
 import { BetTransaction } from "@/entities/BetTransaction";
@@ -22,9 +23,9 @@ import BetList from "../Components/bankroll/betlist";
 import CreateBet from "../Components/bankroll/createbet";
 import BankrollReports from "../Components/bankroll/reports/BankrollReports";
 
-// Align TransactionData interface with database schema
+// Unified interface definitions for this page
 interface TransactionData {
-  id?: number;
+  id: number;
   bankroll_id: number;
   event_name: string;
   event_date: string;
@@ -39,6 +40,7 @@ interface TransactionData {
   tags?: string[];
   sport?: string;
   created_at?: string;
+  created_date?: string;
 }
 
 interface BankrollData {
@@ -50,19 +52,6 @@ interface BankrollData {
   is_active: boolean;
   commission_percentage: number;
   currency: string;
-}
-
-interface BankrollListProps {
-  bankrolls: BankrollData[];
-  onBankrollSelect: (bankroll: BankrollData) => void;
-  onDataChange: () => void;
-  isLoading: boolean;
-}
-
-interface BetListProps {
-  transactions: TransactionData[];
-  isLoading: boolean;
-  onBetUpdate: (bet: TransactionData) => void;
 }
 
 export default function BankrollManagement() {
@@ -111,7 +100,8 @@ export default function BankrollManagement() {
         description: t.description || '',
         tags: t.tags || [],
         sport: t.sport || '',
-        created_at: t.created_at
+        created_at: t.created_at,
+        created_date: t.created_at || t.created_date || new Date().toISOString()
       }));
 
       setBankrolls(transformedBankrolls);
@@ -225,6 +215,7 @@ export default function BankrollManagement() {
           <TabsContent value="create-bankroll" className="space-y-6">
             <CreateBankroll
               onBankrollCreated={loadData}
+              onCancel={() => setActiveTab("bankrolls")}
             />
           </TabsContent>
 
@@ -243,7 +234,8 @@ export default function BankrollManagement() {
                 </div>
                 
                 <CreateBet
-                  bankroll={selectedBankroll}
+                  bankrollId={selectedBankroll.id.toString()}
+                  bankrolls={bankrolls}
                   onBetCreated={loadData}
                 />
                 

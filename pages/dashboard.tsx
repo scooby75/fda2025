@@ -37,6 +37,7 @@ interface StrategyData {
 export default function Dashboard() {
   const [strategies, setStrategies] = useState<StrategyData[]>([]);
   const [gameDataCount, setGameDataCount] = useState(0);
+  const [gameData, setGameData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -48,7 +49,7 @@ export default function Dashboard() {
     setIsLoading(true);
     try {
       const currentUser = await User.me();
-      const [strategiesData, gameData] = await Promise.all([
+      const [strategiesData, allGameData] = await Promise.all([
         Strategy.filter({ created_by: currentUser.email }),
         GameData.list()
       ]);
@@ -70,7 +71,8 @@ export default function Dashboard() {
         }));
 
       setStrategies(transformedStrategies);
-      setGameDataCount(gameData.length);
+      setGameDataCount(allGameData.length);
+      setGameData(allGameData);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
@@ -182,6 +184,7 @@ export default function Dashboard() {
                     ...s,
                     name: s.name!
                   }))}
+                  gameData={gameData}
                   lastUpdated={lastUpdated}
                 />
               </div>

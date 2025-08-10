@@ -22,11 +22,12 @@ import {
 import StrategyForm from "../Components/backtesting/strategyyform";
 import StrategyResults from "../Components/backtesting/strategyresults";
 import SavedStrategies from "../Components/backtesting/savedstrategies";
-import BacktestingEngine from "../src/components/backtesting/BacktestingEngine";
+import BacktestingEngine from "../components/backtesting/BacktestingEngine";
 import TelegramIntegration from "../Components/backtesting/telegramintegration";
 
+// Unified interfaces for this page
 interface StrategyData {
-  id?: string;
+  id?: number;
   name: string;
   description: string;
   market: string;
@@ -83,15 +84,8 @@ interface BacktestingFormData {
   season: string[];
 }
 
-interface StrategyFormProps {
-  id: string;
-  name: string;
-  market: string;
-  created_date: string;
-}
-
-interface SavedStrategyProps {
-  id: string;
+interface SavedStrategyItem {
+  id: number;
   name: string;
   market: string;
   created_date: string;
@@ -125,7 +119,7 @@ export default function Backtesting() {
 
       // Transform strategies data
       const transformedStrategies: StrategyData[] = strategiesData.map((s: any) => ({
-        id: String(s.id || ''),
+        id: s.id,
         name: s.name,
         description: s.description || '',
         market: s.market || 'Over 2.5',
@@ -137,7 +131,8 @@ export default function Backtesting() {
         leagues: s.leagues || [],
         home_teams: s.home_teams || [],
         away_teams: s.away_teams || [],
-        results: s.results
+        results: s.results,
+        created_date: s.created_at || new Date().toISOString()
       }));
 
       setStrategies(transformedStrategies);
@@ -169,6 +164,7 @@ export default function Backtesting() {
       const backtestingEngine = new BacktestingEngine();
       const strategyData: StrategyData = {
         ...formData,
+        id: currentStrategy?.id,
         description: formData.description || '',
         min_odds: formData.min_odds || 1,
         max_odds: formData.max_odds || 10,
@@ -178,7 +174,7 @@ export default function Backtesting() {
       const strategyForEngine = {
         name: strategyData.name,
         market: strategyData.market,
-        id: strategyData.id ? parseInt(strategyData.id) : undefined
+        id: strategyData.id || undefined
       };
       
       const results = backtestingEngine.runBacktest(strategyForEngine, gameData, rankingHomeData, rankingAwayData);
@@ -227,7 +223,7 @@ export default function Backtesting() {
     }
   };
 
-  const handleLoadStrategy = (strategy: StrategyFormProps) => {
+  const handleLoadStrategy = (strategy: SavedStrategyItem) => {
     const strategyData: StrategyData = {
       id: strategy.id,
       name: strategy.name,
@@ -250,6 +246,7 @@ export default function Backtesting() {
   const handleStrategyChange = (strategy: BacktestingFormData) => {
     const strategyData: StrategyData = {
       ...strategy,
+      id: currentStrategy?.id,
       description: strategy.description || '',
       min_odds: strategy.min_odds || 1,
       max_odds: strategy.max_odds || 10
@@ -389,14 +386,14 @@ export default function Backtesting() {
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
               strategies={strategies.map(s => ({ 
-                id: s.id || '0',
+                id: s.id || 0,
                 name: s.name,
                 market: s.market,
                 created_date: s.created_date || new Date().toISOString()
               }))}
               onLoadStrategy={handleLoadStrategy}
-              onDeleteStrategy={async (id: string) => {
-                await Strategy.delete(parseInt(id));
+              onDeleteStrategy={async (id: number) => {
+                await Strategy.delete(id);
                 loadData();
               }}
             />
@@ -405,7 +402,7 @@ export default function Backtesting() {
           <TabsContent value="telegram" className="space-y-6">
             <TelegramIntegration 
               strategies={strategies.map(s => ({ 
-                id: s.id || '0',
+                id: s.id || 0,
                 name: s.name,
                 market: s.market || 'Over 2.5',
                 created_date: s.created_date || new Date().toISOString()
