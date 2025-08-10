@@ -23,7 +23,7 @@ import {
 import StrategyForm from "../Components/backtesting/strategyform";
 import StrategyResults from "../Components/backtesting/strategyresults";
 import SavedStrategies from "../Components/backtesting/savedstrategies";
-import BacktestingEngine from "../components/backtesting/BacktestingEngine";
+import BacktestingEngine from "../Components/backtesting/backtestingengine";
 import TelegramIntegration from "../Components/backtesting/telegramintegration";
 
 interface StrategyData {
@@ -55,6 +55,7 @@ interface RankingData {
   id: string;
   team: string;
   position: number;
+  season: string;
   [key: string]: any;
 }
 
@@ -86,8 +87,20 @@ export default function Backtesting() {
 
       setStrategies(strategiesData as StrategyData[]);
       setGameData(allGameData as GameDataType[]);
-      setRankingHomeData(allRankingHome as RankingData[]);
-      setRankingAwayData(allRankingAway as RankingData[]);
+      
+      // Transform ranking data to include season
+      const transformedRankingHome = allRankingHome.map((r: any) => ({
+        ...r,
+        season: r.season || '2024'
+      }));
+      
+      const transformedRankingAway = allRankingAway.map((r: any) => ({
+        ...r,
+        season: r.season || '2024'
+      }));
+      
+      setRankingHomeData(transformedRankingHome);
+      setRankingAwayData(transformedRankingAway);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     }
@@ -229,8 +242,8 @@ export default function Backtesting() {
                 strategy={currentStrategy}
                 results={currentResults}
                 gameData={gameData}
-                onSaveStrategy={handleSaveStrategy}
-                onRunNewBacktest={handleRunNewBacktest}
+                onSaveStrategy={() => handleSaveStrategy(currentStrategy, currentResults)}
+                onRunNewBacktest={() => handleRunNewBacktest(currentStrategy)}
               />
             ) : (
               <Card className="bg-card border-border">
@@ -257,8 +270,8 @@ export default function Backtesting() {
             <SavedStrategies
               strategies={strategies as any}
               onLoadStrategy={handleLoadStrategy}
-              onDeleteStrategy={async (strategyId: number) => {
-                await Strategy.delete(strategyId);
+              onDeleteStrategy={async (strategyId: string) => {
+                await Strategy.delete(parseInt(strategyId));
                 loadData();
               }}
             />

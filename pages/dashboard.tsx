@@ -132,7 +132,13 @@ export default function Dashboard() {
   const getBestStrategy = (): StrategyData & { name: string | null } => {
     const strategiesWithResults = strategies.filter((s: StrategyData) => s.results?.roi);
     if (strategiesWithResults.length === 0) {
-      return { results: { roi: 0 }, name: null, id: 0 } as StrategyData & { name: string | null };
+      return { 
+        results: { roi: 0, totalGames: 0, wins: 0, profit: 0 }, 
+        name: null, 
+        id: 0,
+        market: '',
+        created_date: ''
+      } as StrategyData & { name: string | null };
     }
     
     return strategiesWithResults.reduce((best, current) => 
@@ -234,17 +240,14 @@ export default function Dashboard() {
           <div className="lg:col-span-2">
             <RecentStrategies 
               strategies={strategies as any}
-              onViewStrategy={(strategyId: string) => {
-                // Navigate to strategy details
-              }}
             />
           </div>
 
           {/* Data Summary */}
           <div>
             <DataSummary 
-              gameDataCount={gameData.length}
-              strategiesCount={strategies.length}
+              gameData={gameData}
+              strategies={strategies}
               lastUpdated={new Date().toISOString()}
             />
           </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Bankroll } from "@/entities/Bankroll";
 import { BetTransaction } from "@/entities/BetTransaction";
@@ -31,10 +32,11 @@ interface BankrollData {
   start_date: string;
   is_active: boolean;
   commission_percentage: number;
+  currency: string;
 }
 
 interface TransactionData {
-  id?: string;
+  id: string;
   bankroll_id: string;
   event_name: string;
   event_date: string;
@@ -80,11 +82,41 @@ export default function BankrollManagement() {
         BetTransaction.list()
       ]);
 
-      setBankrolls(bankrollsData);
-      setTransactions(transactionsData);
+      // Transform data to match our interfaces
+      const transformedBankrolls = bankrollsData.map((b: any) => ({
+        id: String(b.id),
+        name: b.name,
+        initial_balance: b.initial_balance,
+        current_balance: b.current_balance,
+        start_date: b.start_date,
+        is_active: b.is_active,
+        commission_percentage: b.commission_percentage || 0,
+        currency: b.currency || 'BRL'
+      }));
 
-      if (bankrollsData.length > 0 && !selectedBankroll) {
-        setSelectedBankroll(bankrollsData[0]);
+      const transformedTransactions = transactionsData.map((t: any) => ({
+        id: String(t.id),
+        bankroll_id: String(t.bankroll_id),
+        event_name: t.event_name,
+        event_date: t.event_date,
+        competition: t.competition || '',
+        strategy_name: t.strategy_name || '',
+        market: t.market || '',
+        stake: String(t.stake),
+        odds: String(t.odds),
+        result: t.result as "pending" | "win" | "loss" | "void",
+        profit: t.profit || 0,
+        description: t.description || '',
+        tags: t.tags || [],
+        sport: t.sport || 'Futebol',
+        created_date: t.created_at || new Date().toISOString()
+      }));
+
+      setBankrolls(transformedBankrolls);
+      setTransactions(transformedTransactions);
+
+      if (transformedBankrolls.length > 0 && !selectedBankroll) {
+        setSelectedBankroll(transformedBankrolls[0]);
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -206,7 +238,7 @@ export default function BankrollManagement() {
                 }
               }}
               onDelete={async (bankrollId: string) => {
-                await Bankroll.delete(bankrollId);
+                await Bankroll.delete(parseInt(bankrollId));
                 loadData();
               }}
             />
@@ -243,7 +275,6 @@ export default function BankrollManagement() {
 
           <TabsContent value="settings" className="space-y-6">
             <CreateBankroll
-              onSave={handleCreateBankroll}
               onCancel={() => setActiveTab("dashboard")}
             />
           </TabsContent>
@@ -260,8 +291,8 @@ export default function BankrollManagement() {
               setInitialBetData(null);
             }}
             onSave={handleSaveBet}
-            transaction={editingTransaction as any}
-            initialData={initialBetData as any}
+            transaction={editingTransaction}
+            initialData={initialBetData}
           />
         )}
       </div>
