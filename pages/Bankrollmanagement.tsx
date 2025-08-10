@@ -31,7 +31,7 @@ interface TransactionData {
   event_date: string;
   competition?: string;
   strategy_name: string;
-  market?: string;
+  market: string;
   stake: number;
   odds: number;
   result?: 'pending' | 'win' | 'loss' | 'void';
@@ -92,7 +92,7 @@ export default function BankrollManagement() {
         event_date: t.event_date,
         competition: t.competition || '',
         strategy_name: t.strategy_name || 'Sem estratégia',
-        market: t.market || '',
+        market: t.market || 'Over 2.5',
         stake: t.stake,
         odds: t.odds,
         result: t.result || 'pending',

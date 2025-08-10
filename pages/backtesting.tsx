@@ -23,7 +23,7 @@ import {
 import StrategyForm from "../Components/backtesting/strategyyform";
 import StrategyResults from "../Components/backtesting/strategyresults";
 import SavedStrategies from "../Components/backtesting/savedstrategies";
-import BacktestingEngine from "../Components/backtesting/backtestingengine";
+import BacktestingEngine from "../src/components/backtesting/BacktestingEngine";
 import TelegramIntegration from "../Components/backtesting/telegramintegration";
 
 // Unified interfaces for this page
@@ -59,6 +59,7 @@ interface GameDataType {
   season?: number;
   goals_h_ft?: number;
   goals_a_ft?: number;
+  rodada?: number;
   [key: string]: any;
 }
 
@@ -90,6 +91,20 @@ interface SavedStrategyItem {
   name: string;
   market: string;
   created_date: string;
+}
+
+// Engine compatible Strategy interface
+interface EngineStrategy {
+  id?: number;
+  name: string;
+  market: string;
+  unit_stake: number;
+  season?: string | string[];
+  min_ranking_home?: number;
+  max_ranking_home?: number;
+  min_ranking_away?: number;
+  max_ranking_away?: number;
+  [key: string]: any;
 }
 
 export default function Backtesting() {
@@ -137,7 +152,14 @@ export default function Backtesting() {
       }));
 
       setStrategies(transformedStrategies);
-      setGameData(allGameData as GameDataType[]);
+      
+      // Transform game data to include rodada
+      const transformedGameData: GameDataType[] = allGameData.map((g: any) => ({
+        ...g,
+        rodada: g.rodada || 1
+      }));
+      
+      setGameData(transformedGameData);
       
       // Transform ranking data to include season
       const transformedRankingHome = allRankingHome.map((r: any) => ({
@@ -172,11 +194,11 @@ export default function Backtesting() {
         market: formData.market || 'Over 2.5'
       };
       
-      const strategyForEngine = {
+      const strategyForEngine: EngineStrategy = {
         name: strategyData.name,
         market: strategyData.market,
         unit_stake: strategyData.unit_stake,
-        id: strategyData.id || undefined
+        id: strategyData.id ? parseInt(strategyData.id) : undefined
       };
       
       const results = backtestingEngine.runBacktest(strategyForEngine, gameData, rankingHomeData, rankingAwayData);
@@ -388,14 +410,19 @@ export default function Backtesting() {
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
               strategies={strategies.map(s => ({ 
-                id: s.id || '',
+                id: parseInt(s.id || '0'),
                 name: s.name,
                 market: s.market,
                 created_date: s.created_date || new Date().toISOString()
               }))}
-              onLoadStrategy={handleLoadStrategy}
-              onDeleteStrategy={async (id: string) => {
-                await Strategy.delete(parseInt(id));
+              onLoadStrategy={(strategy) => handleLoadStrategy({
+                id: strategy.id.toString(),
+                name: strategy.name,
+                market: strategy.market,
+                created_date: strategy.created_date
+              })}
+              onDeleteStrategy={async (id: number) => {
+                await Strategy.delete(id);
                 loadData();
               }}
             />
@@ -404,7 +431,7 @@ export default function Backtesting() {
           <TabsContent value="telegram" className="space-y-6">
             <TelegramIntegration 
               strategies={strategies.map(s => ({ 
-                id: s.id || '',
+                id: parseInt(s.id || '0'),
                 name: s.name,
                 market: s.market || 'Over 2.5',
                 created_date: s.created_date || new Date().toISOString()
