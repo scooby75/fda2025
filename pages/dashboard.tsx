@@ -149,13 +149,13 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatsCard
                 title="Estratégias"
-                value={String(totalStrategies)}
+                value={totalStrategies.toString()}
                 icon={Target}
                 description="Total de estratégias criadas"
               />
               <StatsCard
                 title="Jogos"
-                value={String(totalGames)}
+                value={totalGames.toString()}
                 icon={Database}
                 description="Dados de jogos disponíveis"
               />
@@ -178,7 +178,6 @@ export default function Dashboard() {
               {/* Data Summary */}
               <div className="lg:col-span-2">
                 <DataSummary
-                  totalGames={totalGames}
                   totalStrategies={totalStrategies}
                   lastUpdated={lastUpdated}
                 />
@@ -187,7 +186,10 @@ export default function Dashboard() {
               {/* Recent Strategies */}
               <div className="lg:col-span-1">
                 <RecentStrategies
-                  strategies={strategies}
+                  strategies={strategies.filter(s => s.name !== null).map(s => ({
+                    ...s,
+                    name: s.name!
+                  }))}
                 />
               </div>
             </div>

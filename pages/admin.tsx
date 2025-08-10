@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { User } from "@/entities/User";
 import { Button } from "@/components/ui/button";
@@ -69,12 +68,12 @@ export default function Admin() {
     setIsLoading(true);
     try {
       const [allUsers, me] = await Promise.all([
-        User.list("-created_date"),
+        User.list(),
         User.me()
       ]);
       
       const now = new Date();
-      const usersToUpdate = allUsers.filter((u: UserData) => {
+      const usersToUpdate = allUsers.filter((u: any) => {
         if (u.status === 'approved' && u.plan_expires_at) {
           const expirationDate = new Date(u.plan_expires_at);
           return now > expirationDate;
@@ -87,12 +86,20 @@ export default function Admin() {
           status: 'blocked',
           approved_by: 'Sistema Automático',
           approved_at: now.toISOString()
-        });
+        } as any);
       }
 
-      const updatedUsers = await User.list("-created_date");
-      setUsers(updatedUsers.filter((u: UserData) => u.email !== me.email));
-      setCurrentUser(me);
+      const updatedUsers = await User.list();
+      const filteredUsers = updatedUsers.filter((u: any) => u.email !== me.email);
+      setUsers(filteredUsers as UserData[]);
+      setCurrentUser({
+        id: me.id,
+        email: me.email,
+        full_name: 'Admin User',
+        role: 'admin',
+        status: 'approved',
+        created_date: new Date().toISOString()
+      });
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
     }

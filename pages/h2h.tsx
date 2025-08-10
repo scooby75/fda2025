@@ -1,24 +1,14 @@
 
 import React, { useState, useEffect } from "react";
 import { GameData } from "@/entities/GameData";
-import { RankingHome } from "@/entities/RankingHome";
-import { RankingAway } from "@/entities/RankingAway";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import {
-  ArrowLeft,
-  Search,
-  Users,
-  Trophy,
-  Calendar,
-  Target,
-  TrendingUp,
-  BarChart3
-} from "lucide-react";
+import { ArrowLeft, Search, TrendingUp, Calendar, Target } from "lucide-react";
 
 import H2HInsights from "../Components/h2h/h2hinsights";
 import ScoreAnalysisCard from "../Components/h2h/scoreanalysiscard";
@@ -32,126 +22,143 @@ interface GameDataType {
   season?: number;
   goals_h_ft?: number;
   goals_a_ft?: number;
-  goals_h_ht?: number;
-  goals_a_ht?: number;
-  [key: string]: any;
-}
-
-interface RankingData {
-  id: string;
-  team: string;
-  position: number;
-  season: string;
   [key: string]: any;
 }
 
 export default function H2H() {
-  const [homeTeam, setHomeTeam] = useState("");
-  const [awayTeam, setAwayTeam] = useState("");
-  const [h2hMatches, setH2hMatches] = useState<GameDataType[]>([]);
-  const [homeRanking, setHomeRanking] = useState<RankingData[]>([]);
-  const [awayRanking, setAwayRanking] = useState<RankingData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDataLoading, setIsDataLoading] = useState(true);
-  const [allGames, setAllGames] = useState<GameDataType[]>([]);
+  const [homeTeam, setHomeTeam] = useState<string>("");
+  const [awayTeam, setAwayTeam] = useState<string>("");
+  const [gameData, setGameData] = useState<GameDataType[]>([]);
+  const [filteredMatches, setFilteredMatches] = useState<GameDataType[]>([]);
+  const [allTeams, setAllTeams] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
 
   useEffect(() => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (homeTeam && awayTeam) {
+      filterMatches();
+    } else {
+      setFilteredMatches([]);
+    }
+  }, [homeTeam, awayTeam, gameData, selectedPeriod]);
+
   const loadData = async () => {
-    setIsDataLoading(true);
-    try {
-      const [allGameData, allRankingHome, allRankingAway] = await Promise.all([
-        GameData.list(),
-        RankingHome.list(),
-        RankingAway.list()
-      ]);
-
-      setAllGames(allGameData as GameDataType[]);
-      setHomeRanking(allRankingHome as RankingData[]);
-      setAwayRanking(allRankingAway as RankingData[]);
-    } catch (error) {
-      console.error("Error loading data:", error);
-    }
-    setIsDataLoading(false);
-  };
-
-  const searchH2H = async () => {
-    if (!homeTeam.trim() || !awayTeam.trim()) return;
-
     setIsLoading(true);
-
     try {
-      const matches = allGames.filter((game: GameDataType) => {
-        const homeMatch = game.home.toLowerCase().includes(homeTeam.toLowerCase()) || 
-                         homeTeam.toLowerCase().includes(game.home.toLowerCase());
-        const awayMatch = game.away.toLowerCase().includes(awayTeam.toLowerCase()) || 
-                         awayTeam.toLowerCase().includes(game.away.toLowerCase());
-        
-        return (homeMatch && awayMatch) || 
-               (game.away.toLowerCase().includes(homeTeam.toLowerCase()) && 
-                game.home.toLowerCase().includes(awayTeam.toLowerCase()));
+      const data = await GameData.list();
+      const transformedData: GameDataType[] = data.map((game: any) => ({
+        id: game.id || `${game.home}-${game.away}-${game.date}`,
+        home: game.home,
+        away: game.away,
+        date: game.date,
+        league: game.league || 'Liga Desconhecida',
+        season: game.season || new Date(game.date).getFullYear(),
+        goals_h_ft: game.goals_h_ft || 0,
+        goals_a_ft: game.goals_a_ft || 0
+      }));
+      
+      setGameData(transformedData);
+      
+      // Extract unique teams
+      const teams = new Set<string>();
+      transformedData.forEach((game: GameDataType) => {
+        teams.add(game.home);
+        teams.add(game.away);
       });
-
-      // Get recent matches for analysis
-      const homeTeamMatches = allGames.filter((game: GameDataType) => 
-        game.home.toLowerCase().includes(homeTeam.toLowerCase()) || 
-        game.away.toLowerCase().includes(homeTeam.toLowerCase())
-      ).slice(0, 10);
-
-      const awayTeamMatches = allGames.filter((game: GameDataType) => 
-        game.home.toLowerCase().includes(awayTeam.toLowerCase()) || 
-        game.away.toLowerCase().includes(awayTeam.toLowerCase())
-      ).slice(0, 10);
-
-      // Calculate basic stats
-      const homeStats = calculateTeamStats(homeTeamMatches, homeTeam);
-      const awayStats = calculateTeamStats(awayTeamMatches, awayTeam);
-
-      const h2hStats = {
-        home: homeStats,
-        away: awayStats
-      };
-
-      setH2hMatches(matches);
+      setAllTeams(Array.from(teams).sort());
     } catch (error) {
-      console.error("Error searching H2H:", error);
+      console.error("Erro ao carregar dados:", error);
     }
-
     setIsLoading(false);
   };
 
-  const calculateTeamStats = (matches: GameDataType[], teamName: string) => {
-    let wins = 0, draws = 0, losses = 0;
+  const filterMatches = () => {
+    if (!homeTeam || !awayTeam) return;
 
-    matches.forEach((match: GameDataType) => {
-      const isHome = match.home.toLowerCase().includes(teamName.toLowerCase());
-      const homeGoals = Number(match.goals_h_ft) || 0;
-      const awayGoals = Number(match.goals_a_ft) || 0;
+    let matches = gameData.filter((game: GameDataType) => 
+      (game.home === homeTeam && game.away === awayTeam) ||
+      (game.home === awayTeam && game.away === homeTeam)
+    );
 
-      if (isHome) {
-        if (homeGoals > awayGoals) wins++;
-        else if (homeGoals === awayGoals) draws++;
-        else losses++;
+    // Apply date filter
+    if (selectedPeriod !== "all") {
+      const cutoffDate = new Date();
+      const yearsBack = parseInt(selectedPeriod);
+      cutoffDate.setFullYear(cutoffDate.getFullYear() - yearsBack);
+      
+      matches = matches.filter((game: GameDataType) => 
+        new Date(game.date) >= cutoffDate
+      );
+    }
+
+    // Sort by date (most recent first)
+    matches.sort((a: GameDataType, b: GameDataType) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    setFilteredMatches(matches);
+  };
+
+  const handleTeamSelect = (team: string, position: 'home' | 'away') => {
+    if (position === 'home') {
+      setHomeTeam(team);
+    } else {
+      setAwayTeam(team);
+    }
+  };
+
+  const swapTeams = () => {
+    const temp = homeTeam;
+    setHomeTeam(awayTeam);
+    setAwayTeam(temp);
+  };
+
+  const getTeamRecord = (team: string, opponent: string) => {
+    const matches = filteredMatches.filter((game: GameDataType) => 
+      (game.home === team && game.away === opponent) ||
+      (game.home === opponent && game.away === team)
+    );
+
+    let wins = 0;
+    let draws = 0;
+    let losses = 0;
+
+    matches.forEach((game: GameDataType) => {
+      const isHome = game.home === team;
+      const teamGoals = isHome ? game.goals_h_ft || 0 : game.goals_a_ft || 0;
+      const opponentGoals = isHome ? game.goals_a_ft || 0 : game.goals_h_ft || 0;
+
+      if (teamGoals > opponentGoals) {
+        wins++;
+      } else if (teamGoals === opponentGoals) {
+        draws++;
       } else {
-        if (awayGoals > homeGoals) wins++;
-        else if (homeGoals === awayGoals) draws++;
-        else losses++;
+        losses++;
       }
     });
 
-    return { wins, draws, losses };
+    return { wins, draws, losses, total: matches.length };
   };
 
-  const getMatchResult = (result: GameDataType) => {
-    const homeGoals = Number(result.goals_h_ft) || 0;
-    const awayGoals = Number(result.goals_a_ft) || 0;
-    
-    if (homeGoals > awayGoals) return "H";
-    if (awayGoals > homeGoals) return "A";
-    return "D";
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando dados dos jogos...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const homeRecord = homeTeam && awayTeam ? getTeamRecord(homeTeam, awayTeam) : null;
+  const awayRecord = homeTeam && awayTeam ? getTeamRecord(awayTeam, homeTeam) : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 sm:p-6 lg:p-8">
@@ -165,176 +172,181 @@ export default function H2H() {
           </Link>
           <div>
             <h1 className="text-3xl lg:text-4xl font-semibold text-foreground mb-1">
-              Análise Head-to-Head
+              Head to Head
             </h1>
             <p className="text-muted-foreground text-lg">
-              Compare histórico entre equipes e analise padrões de confronto
+              Análise detalhada entre duas equipes
             </p>
           </div>
         </div>
 
-        {/* Search Form */}
-        <Card className="bg-card border-border mb-8">
+        {/* Team Selection */}
+        <Card className="bg-card border-border mb-6">
           <CardHeader className="border-b border-border">
             <CardTitle className="text-xl text-card-foreground flex items-center gap-2">
               <Search className="w-6 h-6 text-primary" />
-              Buscar Confronto Direto
+              Seleção de Equipes
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            {isDataLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Carregando dados dos jogos...</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Time da Casa</Label>
+                <Select value={homeTeam} onValueChange={(value) => handleTeamSelect(value, 'home')}>
+                  <SelectTrigger className="bg-input border-border text-foreground">
+                    <SelectValue placeholder="Selecione o time da casa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allTeams.map((team) => (
+                      <SelectItem key={team} value={team}>
+                        {team}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Time Mandante
-                  </label>
-                  <Input
-                    placeholder="Ex: Flamengo, São Paulo..."
-                    value={homeTeam}
-                    onChange={(e) => setHomeTeam(e.target.value)}
-                    className="bg-input border-border text-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Time Visitante
-                  </label>
-                  <Input
-                    placeholder="Ex: Palmeiras, Corinthians..."
-                    value={awayTeam}
-                    onChange={(e) => setAwayTeam(e.target.value)}
-                    className="bg-input border-border text-foreground"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    onClick={searchH2H}
-                    disabled={isLoading || !homeTeam.trim() || !awayTeam.trim()}
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Analisando...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="w-4 h-4 mr-2" />
-                        Analisar H2H
-                      </>
-                    )}
-                  </Button>
-                </div>
+
+              <div className="flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={swapTeams}
+                  disabled={!homeTeam || !awayTeam}
+                  className="border-border text-muted-foreground hover:bg-muted/20"
+                >
+                  ⇄ Trocar
+                </Button>
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Time Visitante</Label>
+                <Select value={awayTeam} onValueChange={(value) => handleTeamSelect(value, 'away')}>
+                  <SelectTrigger className="bg-input border-border text-foreground">
+                    <SelectValue placeholder="Selecione o time visitante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allTeams.map((team) => (
+                      <SelectItem key={team} value={team}>
+                        {team}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Label className="text-card-foreground">Período de Análise</Label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                <Button
+                  variant={selectedPeriod === "all" ? "default" : "outline"}
+                  onClick={() => setSelectedPeriod("all")}
+                  className="text-sm"
+                >
+                  Todos os Tempos
+                </Button>
+                <Button
+                  variant={selectedPeriod === "1" ? "default" : "outline"}
+                  onClick={() => setSelectedPeriod("1")}
+                  className="text-sm"
+                >
+                  Último Ano
+                </Button>
+                <Button
+                  variant={selectedPeriod === "3" ? "default" : "outline"}
+                  onClick={() => setSelectedPeriod("3")}
+                  className="text-sm"
+                >
+                  Últimos 3 Anos
+                </Button>
+                <Button
+                  variant={selectedPeriod === "5" ? "default" : "outline"}
+                  onClick={() => setSelectedPeriod("5")}
+                  className="text-sm"
+                >
+                  Últimos 5 Anos
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Results */}
-        {h2hMatches.length > 0 && (
-          <div className="space-y-8">
-            {/* H2H Insights */}
-            <H2HInsights
-              h2hMatches={h2hMatches}
-              homeTeam={homeTeam}
-              awayTeam={awayTeam}
-            />
+        {homeTeam && awayTeam && filteredMatches.length > 0 ? (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="bg-card border-border">
+                <CardContent className="p-6 text-center">
+                  <div className="text-2xl font-bold text-primary mb-2">
+                    {filteredMatches.length}
+                  </div>
+                  <p className="text-muted-foreground">Confrontos Diretos</p>
+                </CardContent>
+              </Card>
 
-            {/* Recent Matches */}
-            <Card className="bg-card border-border">
-              <CardHeader className="border-b border-border">
-                <CardTitle className="text-xl text-card-foreground flex items-center gap-2">
-                  <Calendar className="w-6 h-6 text-primary" />
-                  Histórico de Confrontos ({h2hMatches.length} jogos)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {h2hMatches.slice(0, 10).map((match: GameDataType, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-muted/20 rounded-lg border border-border">
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(match.date).toLocaleDateString('pt-BR')}
-                        </div>
-                        <div className="font-medium text-foreground">
-                          {match.home} vs {match.away}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <div className="text-sm text-muted-foreground">HT</div>
-                          <div className="font-bold text-foreground">
-                            {(match.goals_h_ht || 0)} - {(match.goals_a_ht || 0)}
-                          </div>
-                        </div>
-                        
-                        <div className="text-center">
-                          <div className="text-sm text-muted-foreground">FT</div>
-                          <div className="font-bold text-foreground">
-                            {(match.goals_h_ft || 0)} - {(match.goals_a_ft || 0)}
-                          </div>
-                        </div>
-                        
-                        <Badge variant={
-                          getMatchResult(match) === 'H' ? 'default' : 
-                          getMatchResult(match) === 'A' ? 'secondary' : 'outline'
-                        }>
-                          {getMatchResult(match) === 'H' && `${match.home} Win`}
-                          {getMatchResult(match) === 'A' && `${match.away} Win`}
-                          {getMatchResult(match) === 'D' && 'Draw'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              <Card className="bg-card border-border">
+                <CardContent className="p-6 text-center">
+                  <div className="text-2xl font-bold text-emerald-400 mb-2">
+                    {homeRecord?.wins || 0}
+                  </div>
+                  <p className="text-muted-foreground">Vitórias {homeTeam}</p>
+                </CardContent>
+              </Card>
 
-            {/* Score Analysis Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="bg-card border-border">
+                <CardContent className="p-6 text-center">
+                  <div className="text-2xl font-bold text-blue-400 mb-2">
+                    {awayRecord?.wins || 0}
+                  </div>
+                  <p className="text-muted-foreground">Vitórias {awayTeam}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Analysis Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ScoreAnalysisCard
-                matches={h2hMatches}
+                gameData={filteredMatches}
                 teamName={homeTeam}
                 perspective="home"
               />
               <ScoreAnalysisCard
-                matches={h2hMatches}
+                gameData={filteredMatches}
                 teamName={awayTeam}
                 perspective="away"
               />
             </div>
-          </div>
-        )}
 
-        {/* No Results */}
-        {!isLoading && homeTeam && awayTeam && h2hMatches.length === 0 && (
+            <H2HInsights
+              homeTeam={homeTeam}
+              awayTeam={awayTeam}
+              matches={filteredMatches}
+              homeRecord={homeRecord}
+              awayRecord={awayRecord}
+            />
+          </div>
+        ) : homeTeam && awayTeam && filteredMatches.length === 0 ? (
           <Card className="bg-card border-border">
             <CardContent className="p-12 text-center">
-              <Users className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+              <Target className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-card-foreground mb-2">
                 Nenhum confronto encontrado
               </h3>
-              <p className="text-muted-foreground mb-6">
-                Não foi possível encontrar jogos entre {homeTeam} e {awayTeam}. 
-                Verifique se os nomes dos times estão corretos.
+              <p className="text-muted-foreground">
+                Não há dados disponíveis para o confronto entre {homeTeam} e {awayTeam} no período selecionado.
               </p>
-              <Button
-                onClick={() => {
-                  setHomeTeam('');
-                  setAwayTeam('');
-                  setH2hMatches([]);
-                }}
-                variant="outline"
-                className="border-border text-foreground hover:bg-muted/20"
-              >
-                Nova Busca
-              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="bg-card border-border">
+            <CardContent className="p-12 text-center">
+              <Search className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-card-foreground mb-2">
+                Selecione as equipes
+              </h3>
+              <p className="text-muted-foreground">
+                Escolha o time da casa e o time visitante para ver a análise head-to-head
+              </p>
             </CardContent>
           </Card>
         )}

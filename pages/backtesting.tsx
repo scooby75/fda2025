@@ -69,7 +69,7 @@ interface RankingData {
   [key: string]: any;
 }
 
-interface FormData {
+interface BacktestingFormData {
   name: string;
   description: string;
   market: string;
@@ -81,11 +81,11 @@ interface FormData {
   leagues: string[];
   home_teams: string[];
   away_teams: string[];
-  season?: string;
+  season: string[];
 }
 
 interface StrategyFormProps {
-  id: string;
+  id: number;
   name: string;
   market: string;
   created_date: string;
@@ -156,7 +156,7 @@ export default function Backtesting() {
     setIsDataLoading(false);
   };
 
-  const handleRunBacktest = async (formData: FormData) => {
+  const handleRunBacktest = async (formData: BacktestingFormData) => {
     setIsLoading(true);
 
     try {
@@ -189,7 +189,7 @@ export default function Backtesting() {
 
   const handleRunNewBacktest = (newStrategy: StrategyData) => {
     setCurrentStrategy(newStrategy);
-    const formData: FormData = {
+    const formData: BacktestingFormData = {
       name: newStrategy.name,
       description: newStrategy.description,
       market: newStrategy.market,
@@ -201,7 +201,7 @@ export default function Backtesting() {
       leagues: newStrategy.leagues,
       home_teams: newStrategy.home_teams,
       away_teams: newStrategy.away_teams,
-      season: Array.isArray(newStrategy.season) ? newStrategy.season[0] : newStrategy.season
+      season: Array.isArray(newStrategy.season) ? newStrategy.season : [newStrategy.season || '2024']
     };
     handleRunBacktest(formData);
   };
@@ -223,7 +223,7 @@ export default function Backtesting() {
 
   const handleLoadStrategy = (strategy: StrategyFormProps) => {
     const strategyData: StrategyData = {
-      id: strategy.id,
+      id: String(strategy.id),
       name: strategy.name,
       description: '',
       market: strategy.market,
@@ -241,7 +241,7 @@ export default function Backtesting() {
     setActiveTab("form");
   };
 
-  const handleStrategyChange = (strategy: FormData) => {
+  const handleStrategyChange = (strategy: BacktestingFormData) => {
     const strategyData: StrategyData = {
       ...strategy,
       description: strategy.description || '',
@@ -251,7 +251,7 @@ export default function Backtesting() {
     setCurrentStrategy(strategyData);
   };
 
-  const convertStrategyToFormData = (strategy: StrategyData): FormData => {
+  const convertStrategyToFormData = (strategy: StrategyData): BacktestingFormData => {
     return {
       name: strategy.name,
       description: strategy.description || '',
@@ -264,7 +264,7 @@ export default function Backtesting() {
       leagues: strategy.leagues,
       home_teams: strategy.home_teams,
       away_teams: strategy.away_teams,
-      season: Array.isArray(strategy.season) ? strategy.season[0] : strategy.season
+      season: Array.isArray(strategy.season) ? strategy.season : [strategy.season || '2024']
     };
   };
 
@@ -383,7 +383,7 @@ export default function Backtesting() {
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
               strategies={strategies.map(s => ({ 
-                id: s.id || '',
+                id: Number(s.id || 0),
                 name: s.name,
                 market: s.market,
                 created_date: s.created_date || new Date().toISOString()
@@ -399,7 +399,7 @@ export default function Backtesting() {
           <TabsContent value="telegram" className="space-y-6">
             <TelegramIntegration 
               strategies={strategies.map(s => ({ 
-                id: s.id || '', 
+                id: Number(s.id || 0), 
                 name: s.name,
                 market: s.market || 'Over 2.5',
                 created_date: s.created_date || new Date().toISOString()
