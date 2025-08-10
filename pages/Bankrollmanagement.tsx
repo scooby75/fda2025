@@ -25,8 +25,8 @@ import BankrollReports from "../Components/bankroll/reports/BankrollReports";
 
 // Unified interface definitions for this page
 interface TransactionData {
-  id: number;
-  bankroll_id: number;
+  id: string;
+  bankroll_id: string;
   event_name: string;
   event_date: string;
   competition?: string;
@@ -40,11 +40,11 @@ interface TransactionData {
   tags?: string[];
   sport?: string;
   created_at?: string;
-  created_date?: string;
+  created_date: string;
 }
 
 interface BankrollData {
-  id: number;
+  id: string;
   name: string;
   initial_balance: number;
   current_balance: number;
@@ -75,7 +75,7 @@ export default function BankrollManagement() {
       ]);
 
       const transformedBankrolls: BankrollData[] = bankrollData.map((b: any) => ({
-        id: b.id,
+        id: b.id.toString(),
         name: b.name,
         initial_balance: b.initial_balance,
         current_balance: b.current_balance,
@@ -86,8 +86,8 @@ export default function BankrollManagement() {
       }));
 
       const transformedTransactions: TransactionData[] = transactionData.map((t: any) => ({
-        id: t.id,
-        bankroll_id: t.bankroll_id,
+        id: t.id.toString(),
+        bankroll_id: t.bankroll_id.toString(),
         event_name: t.event_name,
         event_date: t.event_date,
         competition: t.competition || '',
@@ -123,10 +123,10 @@ export default function BankrollManagement() {
     );
   };
 
-  const handleDeleteBet = async (betId: number) => {
+  const handleDeleteBet = async (betId: string) => {
     setIsLoading(true);
     try {
-      await BetTransaction.delete(betId);
+      await BetTransaction.delete(parseInt(betId));
       setTransactions(prev => prev.filter(bet => bet.id !== betId));
     } catch (error) {
       console.error("Erro ao excluir aposta:", error);
@@ -234,8 +234,8 @@ export default function BankrollManagement() {
                 </div>
                 
                 <CreateBet
-                  bankrollId={selectedBankroll.id.toString()}
-                  bankrolls={bankrolls}
+                  bankrollId={selectedBankroll.id}
+                  bankrolls={bankrolls.map(b => ({ id: b.id, name: b.name }))}
                   onBetCreated={loadData}
                 />
                 

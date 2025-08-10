@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Strategy } from "@/entities/Strategy";
 import { GameData } from "@/entities/GameData";
@@ -22,12 +23,12 @@ import {
 import StrategyForm from "../Components/backtesting/strategyyform";
 import StrategyResults from "../Components/backtesting/strategyresults";
 import SavedStrategies from "../Components/backtesting/savedstrategies";
-import BacktestingEngine from "../components/backtesting/BacktestingEngine";
+import BacktestingEngine from "../Components/backtesting/backtestingengine";
 import TelegramIntegration from "../Components/backtesting/telegramintegration";
 
 // Unified interfaces for this page
 interface StrategyData {
-  id?: number;
+  id?: string;
   name: string;
   description: string;
   market: string;
@@ -85,7 +86,7 @@ interface BacktestingFormData {
 }
 
 interface SavedStrategyItem {
-  id: number;
+  id: string;
   name: string;
   market: string;
   created_date: string;
@@ -119,7 +120,7 @@ export default function Backtesting() {
 
       // Transform strategies data
       const transformedStrategies: StrategyData[] = strategiesData.map((s: any) => ({
-        id: s.id,
+        id: s.id?.toString(),
         name: s.name,
         description: s.description || '',
         market: s.market || 'Over 2.5',
@@ -386,14 +387,14 @@ export default function Backtesting() {
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
               strategies={strategies.map(s => ({ 
-                id: s.id || 0,
+                id: s.id || '',
                 name: s.name,
                 market: s.market,
                 created_date: s.created_date || new Date().toISOString()
               }))}
               onLoadStrategy={handleLoadStrategy}
-              onDeleteStrategy={async (id: number) => {
-                await Strategy.delete(id);
+              onDeleteStrategy={async (id: string) => {
+                await Strategy.delete(parseInt(id));
                 loadData();
               }}
             />
@@ -402,7 +403,7 @@ export default function Backtesting() {
           <TabsContent value="telegram" className="space-y-6">
             <TelegramIntegration 
               strategies={strategies.map(s => ({ 
-                id: s.id || 0,
+                id: s.id || '',
                 name: s.name,
                 market: s.market || 'Over 2.5',
                 created_date: s.created_date || new Date().toISOString()
