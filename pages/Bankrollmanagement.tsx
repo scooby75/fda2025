@@ -30,7 +30,7 @@ interface TransactionData {
   event_name: string;
   event_date: string;
   competition?: string;
-  strategy_name?: string;
+  strategy_name: string;
   market?: string;
   stake: number;
   odds: number;
@@ -91,7 +91,7 @@ export default function BankrollManagement() {
         event_name: t.event_name,
         event_date: t.event_date,
         competition: t.competition || '',
-        strategy_name: t.strategy_name || '',
+        strategy_name: t.strategy_name || 'Sem estratégia',
         market: t.market || '',
         stake: t.stake,
         odds: t.odds,
@@ -236,7 +236,8 @@ export default function BankrollManagement() {
                 <CreateBet
                   bankrollId={selectedBankroll.id}
                   bankrolls={bankrolls.map(b => ({ id: b.id, name: b.name }))}
-                  onBetCreated={loadData}
+                  onClose={() => {}}
+                  onSave={loadData}
                 />
                 
                 <BetList

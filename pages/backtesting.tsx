@@ -175,6 +175,7 @@ export default function Backtesting() {
       const strategyForEngine = {
         name: strategyData.name,
         market: strategyData.market,
+        unit_stake: strategyData.unit_stake,
         id: strategyData.id || undefined
       };
       
