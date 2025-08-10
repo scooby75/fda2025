@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,13 +20,47 @@ import {
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
-import BacktestingEngine from "@/components/backtesting/BacktestingEngine";
+import BacktestingEngine from "../backtesting/BacktestingEngine";
 
-interface Game {
-  goals_h_ft: number;
-  goals_a_ft: number;
-  goals_h_ht: number;
-  goals_a_ht: number;
+interface GameData {
+  goals_h_ft?: number;
+  goals_a_ft?: number;
+  goals_h_ht?: number;
+  goals_a_ht?: number;
+  league: string;
+  season: number;
+  date: string;
+  rodada: number;
+  home: string;
+  away: string;
+  odd_h_ft?: number;
+  odd_d_ft?: number;
+  odd_a_ft?: number;
+  odd_h_ht?: number;
+  odd_d_ht?: number;
+  odd_a_ht?: number;
+  ppg_home_pre?: number;
+  ppg_away_pre?: number;
+  xg_home_pre?: number;
+  xg_away_pre?: number;
+  shotsontarget_h?: number;
+  shotsontarget_a?: number;
+  shotsofftarget_h?: number;
+  shotsofftarget_a?: number;
+  odd_over15_ft?: number;
+  odd_over25_ft?: number;
+  odd_over35_ft?: number;
+  odd_over45_ft?: number;
+  odd_under05_ft?: number;
+  odd_under15_ft?: number;
+  odd_under25_ft?: number;
+  odd_under35_ft?: number;
+  odd_under45_ft?: number;
+  odd_btts_yes?: number;
+  odd_btts_no?: number;
+  odd_dc_1x?: number;
+  odd_dc_12?: number;
+  odd_dc_x2?: number;
   [key: string]: any;
 }
 
@@ -37,6 +72,8 @@ interface Bet {
 interface Strategy {
   name: string;
   unit_stake: number;
+  market: string;
+  leagues?: string[];
   [key: string]: any;
 }
 
@@ -59,7 +96,7 @@ interface Results {
     odds: number;
     result: string;
     profit: number;
-    game?: Game;
+    game?: GameData;
   }>;
   best_leagues: Array<{ name: string; profit: number }>;
   worst_leagues: Array<{ name: string; profit: number }>;
@@ -72,7 +109,7 @@ interface StrategyResultsProps {
   strategy: Strategy;
   results: Results;
   onSaveStrategy: (strategy: Strategy, results: Results) => void;
-  gameData: Game[];
+  gameData: GameData[];
   onRunNewBacktest: (strategy: Strategy) => void;
 }
 
@@ -107,7 +144,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
   };
 
   // Helper function to get bet result for a specific market
-  const getBetResultForMarket = (market: string, game: Game): string => {
+  const getBetResultForMarket = (market: string, game: GameData): string => {
     const homeGoals = game.goals_h_ft;
     const awayGoals = game.goals_a_ft;
     const homeGoalsHT = game.goals_h_ht;
@@ -126,21 +163,21 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
         return "undefined";
     }
 
-    const totalGoals = homeGoals + awayGoals;
+    const totalGoals = (homeGoals || 0) + (awayGoals || 0);
 
     switch (market) {
       case "home_win":
-        return homeGoals > awayGoals ? "win" : "loss";
+        return (homeGoals || 0) > (awayGoals || 0) ? "win" : "loss";
       case "draw":
-        return homeGoals === awayGoals ? "win" : "loss";
+        return (homeGoals || 0) === (awayGoals || 0) ? "win" : "loss";
       case "away_win":
-        return awayGoals > homeGoals ? "win" : "loss";
+        return (awayGoals || 0) > (homeGoals || 0) ? "win" : "loss";
       case "home_win_ht":
-        return homeGoalsHT > awayGoalsHT ? "win" : "loss";
+        return (homeGoalsHT || 0) > (awayGoalsHT || 0) ? "win" : "loss";
       case "draw_ht":
-        return homeGoalsHT === awayGoalsHT ? "win" : "loss";
+        return (homeGoalsHT || 0) === (awayGoalsHT || 0) ? "win" : "loss";
       case "away_win_ht":
-        return awayGoalsHT > homeGoalsHT ? "win" : "loss";
+        return (awayGoalsHT || 0) > (homeGoalsHT || 0) ? "win" : "loss";
       case "over_15":
         return totalGoals >= 2 ? "win" : "loss";
       case "over_25":
@@ -150,15 +187,15 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
       case "under_25":
         return totalGoals < 3 ? "win" : "loss";
       case "btts_yes":
-        return homeGoals >= 1 && awayGoals >= 1 ? "win" : "loss";
+        return (homeGoals || 0) >= 1 && (awayGoals || 0) >= 1 ? "win" : "loss";
       case "btts_no":
-        return homeGoals < 1 || awayGoals < 1 ? "win" : "loss";
+        return (homeGoals || 0) < 1 || (awayGoals || 0) < 1 ? "win" : "loss";
       case "dc_1x":
-        return homeGoals >= awayGoals ? "win" : "loss";
+        return (homeGoals || 0) >= (awayGoals || 0) ? "win" : "loss";
       case "dc_12":
-        return homeGoals !== awayGoals ? "win" : "loss";
+        return (homeGoals || 0) !== (awayGoals || 0) ? "win" : "loss";
       case "dc_x2":
-        return awayGoals >= homeGoals ? "win" : "loss";
+        return (awayGoals || 0) >= (homeGoals || 0) ? "win" : "loss";
       default:
         return "loss";
     }
@@ -195,7 +232,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
     if (!gameData || gameData.length === 0 || !strategy || !strategy.unit_stake) return [];
 
     const backtestingEngine = new BacktestingEngine();
-    const filteredGameData = backtestingEngine.filterGames(strategy, gameData);
+    const filteredGameData = backtestingEngine.filterGames(strategy, gameData, [], []);
 
     const markets = [
       { key: "home_win", label: "Casa Vence (FT)", oddField: "odd_h_ft" },
@@ -221,7 +258,7 @@ export default function StrategyResults({ strategy, results, onSaveStrategy, gam
       let wins = 0;
       const bets: Bet[] = [];
 
-      filteredGameData.forEach((game: Game) => {
+      filteredGameData.forEach((game: GameData) => {
         const odds = game[market.oddField];
         if (!odds || odds === 0) return;
 
