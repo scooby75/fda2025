@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { GameData } from "@/entities/GameData";
 import { Button } from "@/components/ui/button";
@@ -306,12 +305,12 @@ export default function H2H() {
             {/* Analysis Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ScoreAnalysisCard
-                gameData={filteredMatches}
+                games={filteredMatches}
                 teamName={homeTeam}
                 perspective="home"
               />
               <ScoreAnalysisCard
-                gameData={filteredMatches}
+                games={filteredMatches}
                 teamName={awayTeam}
                 perspective="away"
               />
@@ -320,9 +319,7 @@ export default function H2H() {
             <H2HInsights
               homeTeam={homeTeam}
               awayTeam={awayTeam}
-              matches={filteredMatches}
-              homeRecord={homeRecord}
-              awayRecord={awayRecord}
+              h2hMatches={filteredMatches}
             />
           </div>
         ) : homeTeam && awayTeam && filteredMatches.length === 0 ? (

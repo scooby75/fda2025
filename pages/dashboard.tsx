@@ -178,7 +178,10 @@ export default function Dashboard() {
               {/* Data Summary */}
               <div className="lg:col-span-2">
                 <DataSummary
-                  totalStrategies={totalStrategies}
+                  strategies={strategies.filter(s => s.name !== null).map(s => ({
+                    ...s,
+                    name: s.name!
+                  }))}
                   lastUpdated={lastUpdated}
                 />
               </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Strategy } from "@/entities/Strategy";
 import { GameData } from "@/entities/GameData";
@@ -85,7 +84,14 @@ interface BacktestingFormData {
 }
 
 interface StrategyFormProps {
-  id: number;
+  id: string;
+  name: string;
+  market: string;
+  created_date: string;
+}
+
+interface SavedStrategyProps {
+  id: string;
   name: string;
   market: string;
   created_date: string;
@@ -172,7 +178,7 @@ export default function Backtesting() {
       const strategyForEngine = {
         name: strategyData.name,
         market: strategyData.market,
-        id: strategyData.id ? Number(strategyData.id) : undefined
+        id: strategyData.id ? parseInt(strategyData.id) : undefined
       };
       
       const results = backtestingEngine.runBacktest(strategyForEngine, gameData, rankingHomeData, rankingAwayData);
@@ -223,7 +229,7 @@ export default function Backtesting() {
 
   const handleLoadStrategy = (strategy: StrategyFormProps) => {
     const strategyData: StrategyData = {
-      id: String(strategy.id),
+      id: strategy.id,
       name: strategy.name,
       description: '',
       market: strategy.market,
@@ -383,7 +389,7 @@ export default function Backtesting() {
           <TabsContent value="saved" className="space-y-6">
             <SavedStrategies
               strategies={strategies.map(s => ({ 
-                id: Number(s.id || 0),
+                id: s.id || '0',
                 name: s.name,
                 market: s.market,
                 created_date: s.created_date || new Date().toISOString()
@@ -399,7 +405,7 @@ export default function Backtesting() {
           <TabsContent value="telegram" className="space-y-6">
             <TelegramIntegration 
               strategies={strategies.map(s => ({ 
-                id: Number(s.id || 0), 
+                id: s.id || '0',
                 name: s.name,
                 market: s.market || 'Over 2.5',
                 created_date: s.created_date || new Date().toISOString()
