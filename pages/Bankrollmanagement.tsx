@@ -43,9 +43,9 @@ interface TransactionData {
   competition: string;
   strategy_name: string;
   market: string;
-  stake: number;
-  odds: number;
-  result: "pending" | "win" | "loss" | "void";
+  stake: string;
+  odds: string;
+  result: "pending" | "win" | "loss";
   profit: number;
   description: string;
   tags: string[];
@@ -102,9 +102,9 @@ export default function BankrollManagement() {
         competition: t.competition || '',
         strategy_name: t.strategy_name || '',
         market: t.market || '',
-        stake: Number(t.stake),
-        odds: Number(t.odds),
-        result: t.result as "pending" | "win" | "loss" | "void",
+        stake: String(t.stake),
+        odds: String(t.odds),
+        result: t.result === "void" ? "pending" : t.result as "pending" | "win" | "loss",
         profit: t.profit || 0,
         description: t.description || '',
         tags: t.tags || [],
@@ -124,7 +124,7 @@ export default function BankrollManagement() {
     setIsLoading(false);
   };
 
-  const handleCreateBankroll = async (bankroll: BankrollData) => {
+  const handleCreateBankroll = async () => {
     await loadData();
     setShowCreateBankroll(false);
   };
@@ -264,6 +264,7 @@ export default function BankrollManagement() {
               bankrolls={bankrolls}
               transactions={transactions}
               selectedBankroll={selectedBankroll}
+              isLoading={isLoading}
             />
           </TabsContent>
 
@@ -286,7 +287,11 @@ export default function BankrollManagement() {
               setInitialBetData(null);
             }}
             onSave={handleSaveBet}
-            transaction={editingTransaction}
+            transaction={editingTransaction ? {
+              ...editingTransaction,
+              stake: parseFloat(editingTransaction.stake),
+              odds: parseFloat(editingTransaction.odds)
+            } : null}
             initialData={initialBetData}
           />
         )}

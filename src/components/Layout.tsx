@@ -14,19 +14,33 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { createPageUrl } from '@/utils';
 
+interface UserData {
+  id: string;
+  email: string;
+  role?: string;
+}
+
 export default function Layout() {
   const location = useLocation();
-  const [user, setUser] = React.useState(null);
+  const [user, setUser] = React.useState<UserData | null>(null);
 
   React.useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      setUser(session?.user ? { 
+        id: session.user.id, 
+        email: session.user.email || '',
+        role: session.user.user_metadata?.role
+      } : null);
     });
 
     // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      setUser(session?.user ? { 
+        id: session.user.id, 
+        email: session.user.email || '',
+        role: session.user.user_metadata?.role
+      } : null);
     });
 
     return () => subscription.unsubscribe();

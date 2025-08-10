@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Strategy } from "@/entities/Strategy";
 import { GameData } from "@/entities/GameData";
@@ -129,7 +128,7 @@ export default function Dashboard() {
     };
   };
 
-  const getBestStrategy = (): StrategyData & { name: string | null } => {
+  const getBestStrategy = (): (StrategyData & { name: string | null }) | null => {
     const strategiesWithResults = strategies.filter((s: StrategyData) => s.results?.roi);
     if (strategiesWithResults.length === 0) {
       return {
@@ -201,9 +200,9 @@ export default function Dashboard() {
           />
           <StatsCard
             title="Melhor Estratégia"
-            value={bestStrategy.name || "Nenhuma"}
+            value={bestStrategy?.name || "Nenhuma"}
             icon={Zap}
-            description={`${(bestStrategy.results?.roi || 0).toFixed(1)}% ROI`}
+            description={`${(bestStrategy?.results?.roi || 0).toFixed(1)}% ROI`}
           />
         </div>
 
@@ -242,8 +241,8 @@ export default function Dashboard() {
           {/* Data Summary */}
           <div>
             <DataSummary 
-              gameData={gameData}
-              strategies={strategies}
+              gameDataCount={gameData.length}
+              strategiesCount={strategies.length}
               lastUpdated={new Date().toISOString()}
             />
           </div>

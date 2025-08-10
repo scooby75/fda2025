@@ -3,14 +3,14 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Backtesting from './pages/Backtesting';
-import BankrollManagement from './pages/BankrollManagement';
-import DailyGames from './pages/DailyGames';
-import UploadData from './pages/UploadData';
-import Admin from './pages/Admin';
-import H2H from './pages/H2H';
-import Landing from './pages/Landing';
+import Dashboard from '../pages/dashboard';
+import Backtesting from '../pages/backtesting';
+import BankrollManagement from '../pages/Bankrollmanagement';
+import DailyGames from '../pages/dailygames';
+import UploadData from '../pages/uploaddata';
+import Admin from '../pages/admin';
+import H2H from '../pages/h2h';
+import Landing from '../pages/landing';
 
 const queryClient = new QueryClient();
 
