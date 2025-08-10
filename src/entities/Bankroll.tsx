@@ -16,6 +16,17 @@ export class Bankroll {
     return data || []
   }
 
+  static async get(id: number): Promise<BankrollRow> {
+    const { data, error } = await supabase
+      .from('bankroll')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  }
+
   static async filter(filters: Record<string, any>, orderBy?: string): Promise<BankrollRow[]> {
     let query = supabase.from('bankroll').select('*')
     

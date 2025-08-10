@@ -24,6 +24,20 @@ export class BetTransaction {
     return data || []
   }
 
+  static async filter(filters: Record<string, any>): Promise<BetTransactionRow[]> {
+    let query = supabase.from('bet_transaction').select('*')
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        query = query.eq(key, value)
+      }
+    })
+    
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
   static async create(data: BetTransactionInsert): Promise<BetTransactionRow> {
     const { data: result, error } = await supabase
       .from('bet_transaction')

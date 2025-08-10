@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,19 +17,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { TelegramNotification } from "@/entities/TelegramNotification";
-import BacktestingEngine from "../backtesting/BacktestingEngine";
-
-interface Strategy {
-  id?: number;
-  name: string;
-  market: string;
-  season?: string | string[];
-  min_ranking_home?: number;
-  max_ranking_home?: number;
-  min_ranking_away?: number;
-  max_ranking_away?: number;
-  [key: string]: any;
-}
+import BacktestingEngine, { type Strategy, type GameData } from "@/components/backtesting/BacktestingEngine";
 
 interface NotificationSettings {
   strategy_id: number;
@@ -48,17 +35,6 @@ interface TelegramNotificationRow {
   is_active: boolean;
   fallback_email?: string;
   created_at: string;
-}
-
-interface GameData {
-  league: string;
-  season: number;
-  date: string;
-  home: string;
-  away: string;
-  goals_h_ft?: number;
-  goals_a_ft?: number;
-  [key: string]: any;
 }
 
 interface TelegramIntegrationProps {
@@ -92,19 +68,19 @@ export default function TelegramIntegration({ strategies, gameData }: TelegramIn
   };
 
   const addTestMessage = (message: string) => {
-    setTestMessages(prev => [...prev, message]);
+    setTestMessages((prev: string[]) => [...prev, message]);
   };
 
   const handleStrategyChange = (value: string) => {
-    const strategy = strategies.find(s => s.id?.toString() === value);
+    const strategy = strategies.find((s: Strategy) => s.id?.toString() === value);
     setSelectedStrategy(strategy || null);
     if (strategy?.id) {
-      setSettings(prev => ({ ...prev, strategy_id: strategy.id! }));
+      setSettings((prev: NotificationSettings) => ({ ...prev, strategy_id: strategy.id! }));
     }
   };
 
   const handleInputChange = (field: keyof NotificationSettings, value: string) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
+    setSettings((prev: NotificationSettings) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -199,7 +175,7 @@ export default function TelegramIntegration({ strategies, gameData }: TelegramIn
   const testNotification = async (notification: TelegramNotificationRow) => {
     setIsLoading(true);
     try {
-      const strategy = strategies.find(s => s.id === notification.strategy_id);
+      const strategy = strategies.find((s: Strategy) => s.id === notification.strategy_id);
       if (!strategy) {
         throw new Error('Estratégia não encontrada');
       }
@@ -238,20 +214,13 @@ ${index + 1}. ${game.home} vs ${game.away}
       // Fallback para email se disponível
       if (notification.fallback_email) {
         try {
-          // Note: SendEmail is not available in the Core module
-          // This is a placeholder for email functionality
+          // Note: Email functionality would be implemented here
           addTestMessage(`📧 Email de fallback enviado para ${notification.fallback_email}`);
         } catch (emailError) {
           console.error('Erro ao enviar email:', emailError);
           addTestMessage(`❌ Erro ao enviar email: ${String(emailError)}`);
         }
       }
-
-      // Update notification record
-      // Note: TelegramNotification.get method doesn't exist, using update instead
-      await TelegramNotification.update(notification.id, {
-        // Update last tested timestamp if field exists
-      });
 
       const filteredStrategyGames = backtestingEngine.filterGames(strategy, gameData.filter((g: GameData) => g.league === strategy.name), [], []);
 
@@ -355,7 +324,7 @@ ${index + 1}. ${game.home} vs ${game.away}
                   required
                 >
                   <option value="">Selecione uma estratégia</option>
-                  {strategies.map((strategy) => (
+                  {strategies.map((strategy: Strategy) => (
                     <option key={strategy.id} value={strategy.id?.toString()}>
                       {strategy.name} - {strategy.market}
                     </option>
@@ -441,7 +410,7 @@ ${index + 1}. ${game.home} vs ${game.away}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {notifications.map((notification) => (
+                {notifications.map((notification: TelegramNotificationRow) => (
                   <TableRow key={notification.id} className="border-slate-700">
                     <TableCell className="text-white font-medium">
                       {notification.strategy_name}
@@ -525,7 +494,7 @@ ${index + 1}. ${game.home} vs ${game.away}
               <p className="text-slate-500 text-sm">Nenhuma atividade registrada</p>
             ) : (
               <div className="space-y-2">
-                {testMessages.map((message, index) => (
+                {testMessages.map((message: string, index: number) => (
                   <div key={index} className="text-sm">
                     <span className="text-slate-400">
                       [{format(new Date(), 'HH:mm:ss')}]

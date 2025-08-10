@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Wallet } from "lucide-react";
 import { Bankroll } from "@/entities/Bankroll";
 
-export default function CreateBankroll({ onBankrollCreated, onCancel }) {
+interface CreateBankrollProps {
+  onBankrollCreated: () => void;
+  onCancel: () => void;
+}
+
+export default function CreateBankroll({ onBankrollCreated, onCancel }: CreateBankrollProps) {
   const [formData, setFormData] = useState({
     name: "",
     currency: "BRL",
@@ -17,14 +23,14 @@ export default function CreateBankroll({ onBankrollCreated, onCancel }) {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -79,7 +85,7 @@ export default function CreateBankroll({ onBankrollCreated, onCancel }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="currency" className="text-muted-foreground">Moeda</Label>
-              <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
+              <Select value={formData.currency} onValueChange={(value: string) => handleInputChange('currency', value)}>
                 <SelectTrigger className="bg-input border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>

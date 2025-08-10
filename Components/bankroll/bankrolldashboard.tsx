@@ -16,13 +16,41 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+interface BankrollData {
+  id: string;
+  name: string;
+  currency: string;
+  current_balance: number;
+  initial_balance: number;
+}
+
+interface TransactionData {
+  id: string;
+  bankroll_id: string;
+  event_name: string;
+  strategy_name: string;
+  market: string;
+  result: 'win' | 'loss' | 'pending';
+  profit: number;
+  stake: number;
+  created_date: string;
+}
+
+interface BankrollDashboardProps {
+  bankrolls: BankrollData[];
+  selectedBankroll: BankrollData | null;
+  transactions: TransactionData[];
+  isLoading: boolean;
+  onBankrollSelect: (bankroll: BankrollData | null) => void;
+}
+
 export default function BankrollDashboard({ 
   bankrolls, 
   selectedBankroll, 
   transactions, 
   isLoading, 
   onBankrollSelect 
-}) {
+}: BankrollDashboardProps) {
   if (isLoading) {
     return (
       <div className="text-center py-12">
@@ -48,22 +76,22 @@ export default function BankrollDashboard({
     );
   }
 
-  const bankrollTransactions = transactions.filter(t => t.bankroll_id === selectedBankroll?.id);
+  const bankrollTransactions = transactions.filter((t: TransactionData) => t.bankroll_id === selectedBankroll?.id);
   
   const getStats = () => {
     const totalBets = bankrollTransactions.length;
-    const finishedBets = bankrollTransactions.filter(t => t.result !== 'pending');
-    const winningBets = bankrollTransactions.filter(t => t.result === 'win').length;
-    const losingBets = bankrollTransactions.filter(t => t.result === 'loss').length;
-    const pendingBets = bankrollTransactions.filter(t => t.result === 'pending').length;
+    const finishedBets = bankrollTransactions.filter((t: TransactionData) => t.result !== 'pending');
+    const winningBets = bankrollTransactions.filter((t: TransactionData) => t.result === 'win').length;
+    const losingBets = bankrollTransactions.filter((t: TransactionData) => t.result === 'loss').length;
+    const pendingBets = bankrollTransactions.filter((t: TransactionData) => t.result === 'pending').length;
     
     const totalProfit = bankrollTransactions
-        .filter(t => t.result !== 'pending')
-        .reduce((sum, t) => sum + (t.profit || 0), 0);
+        .filter((t: TransactionData) => t.result !== 'pending')
+        .reduce((sum: number, t: TransactionData) => sum + (t.profit || 0), 0);
 
     const totalStaked = bankrollTransactions
-        .filter(t => t.result !== 'pending')
-        .reduce((sum, t) => sum + t.stake, 0);
+        .filter((t: TransactionData) => t.result !== 'pending')
+        .reduce((sum: number, t: TransactionData) => sum + t.stake, 0);
 
     const hitRate = finishedBets.length > 0 ? (winningBets / finishedBets.length) * 100 : 0;
     
@@ -99,16 +127,16 @@ export default function BankrollDashboard({
         <CardContent className="p-6">
           <Select 
             value={selectedBankroll?.id || ''} 
-            onValueChange={(value) => {
-              const bankroll = bankrolls.find(b => b.id === value);
-              onBankrollSelect(bankroll);
+            onValueChange={(value: string) => {
+              const bankroll = bankrolls.find((b: BankrollData) => b.id === value);
+              onBankrollSelect(bankroll || null);
             }}
           >
             <SelectTrigger className="bg-input border-border text-foreground">
               <SelectValue placeholder="Selecione uma banca..." />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              {bankrolls.map(bankroll => (
+              {bankrolls.map((bankroll: BankrollData) => (
                 <SelectItem key={bankroll.id} value={bankroll.id}>
                   {bankroll.name} - {bankroll.currency} {bankroll.current_balance?.toFixed(2) || bankroll.initial_balance?.toFixed(2)}
                 </SelectItem>
@@ -181,7 +209,7 @@ export default function BankrollDashboard({
             <CardContent className="p-6">
               {bankrollTransactions.length > 0 ? (
                 <div className="space-y-3">
-                  {bankrollTransactions.slice(0, 5).map((transaction) => (
+                  {bankrollTransactions.slice(0, 5).map((transaction: TransactionData) => (
                     <div key={transaction.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
                       <div className="flex-1">
                         <p className="font-medium text-card-foreground">{transaction.event_name}</p>
